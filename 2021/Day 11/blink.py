@@ -35,7 +35,7 @@ while (step < 100) or (not sync):
         # Add 1 to each 3 x 3 area centered on the blink
         for y, x in zip(row, column):
             y1, x1 = max(y-1, 0), max(x-1, 0)
-            y2, x2 = min(y+2, max_y+1), min(x+2, max_x+1)
+            y2, x2 = min(y+2, max_y), min(x+2, max_x)
             grid[y1:y2, x1:x2] += 1
             if step < 100: blink_count += 1
         
