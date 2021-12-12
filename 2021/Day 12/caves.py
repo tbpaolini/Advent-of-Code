@@ -1,9 +1,8 @@
 from __future__ import annotations
-from collections import deque
-from itertools import combinations, repeat
-from typing import List
+from typing import Dict
+from copy import copy, deepcopy
 
-with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 12\input.txt", "rt") as file:
+with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 12\test_input1.txt", "rt") as file:
     nodes = []
     for line in file:
         nodes += [tuple(line.rstrip().split("-"))]
@@ -38,6 +37,9 @@ class Cave():
     def __repr__(self) -> str:
         return f"Cave('{self.name}')"
     
+    def __deepcopy__(self, memo=None):
+        return Cave(self.name)
+    
     def add_joint(self, node:Cave) -> None:
         self.joints.add(node)
         node.joints.add(self)
@@ -52,35 +54,41 @@ def find_path(caves:dict):
     paths = set()
     max_visited = 0
 
-    def travel(position:Cave, my_path:list=[], step=0):
+    def travel(position:Cave, my_path:list=[], history:Dict[Cave,set]={}):
         nonlocal paths, max_visited
 
+        my_history = deepcopy(history)
+        my_history.setdefault(position, {"start"})
+
         if position == "end":
-            num_visited = 0
-            for cave in set(my_path):
-                if cave.type == "small": num_visited += 1
-            if num_visited < max_visited: return
-            if num_visited > max_visited: paths.clear()
-            max_visited = num_visited
+            # num_visited = 0
+            # for cave in set(my_path):
+            #     if cave.type == "small": num_visited += 1
+            # if num_visited < max_visited: return
+            # if num_visited > max_visited: paths.clear()
+            # max_visited = num_visited
             paths.add(tuple(my_path + [position]))
             return
         
-        previous_paths = split_list(my_path, position)
-        for path_a, path_b in combinations(previous_paths, r=2):
-            if is_sublist(path_a, path_b):
-                return
-        
-        my_exits = position.joints - {position}
+        my_exits = position.joints - my_history[position]
+
         for next_cave in my_exits:
             if (next_cave.type == "small") and (next_cave in my_path):
                 continue
             else:
-                travel(next_cave, my_path + [position], step + 1)
+                my_history[position].add(next_cave)
+                travel(next_cave, my_path + [position], my_history)
 
     travel(caves["start"])
     return paths
 
 test = find_path(Cave.cave_system)
 
+def print_paths(paths):
+    for path in paths:
+        text = ", ".join(cave.name for cave in path)
+        print(text)
+
 # 39444 - too high
 # 25066 - too high
+#  1843 - too low
