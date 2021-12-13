@@ -1,9 +1,6 @@
 from __future__ import annotations
-from typing import Dict
-from copy import deepcopy
-from collections import Counter
 
-with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 12\input.txt", "rt") as file:
+with open("input.txt", "rt") as file:
     nodes = []
     for line in file:
         nodes += [tuple(line.rstrip().split("-"))]
@@ -38,9 +35,6 @@ class Cave():
     def __repr__(self) -> str:  # User friendly representation on terminal
         return f"Cave('{self.name}')"
     
-    def __deepcopy__(self, memo=None):  # Enable the deep copy feature
-        return Cave(self.name)
-    
     def add_joint(self, node:Cave) -> None:  # Join two caves together
         self.joints.add(node)
         node.joints.add(self)
@@ -54,10 +48,9 @@ for point_a, point_b in nodes:
 
 def find_path(caves:dict, extra_visit=False):
     paths = set()
-    visit_count = Counter()
 
     # Recursively search through the paths
-    def travel(position:Cave, my_path:list=[], has_extra_visit:bool=False, count:Counter=visit_count):
+    def travel(position:Cave, my_path:list=[], has_extra_visit:bool=False):
         nonlocal paths
 
         # Stop if we arrived at the start again
@@ -69,17 +62,15 @@ def find_path(caves:dict, extra_visit=False):
             return
         
         # Count the visits on the current path
-        my_count = deepcopy(count)
         if position.type == "small":
-            my_count.update((position,))
             max_visits = 2 if has_extra_visit else 1
-            visit_number = my_count[position]
-            if visit_number == max_visits: has_extra_visit=False
-            if visit_number > max_visits: return    # Stop if we reached the maximum visits of the small cave
+            visit_count = my_path.count(position) + 1
+            if visit_count == max_visits: has_extra_visit=False
+            if visit_count > max_visits: return    # Stop if we reached the maximum visits of the small cave
 
         # Try each possible exit
         for next_cave in position.joints:
-            travel(next_cave, my_path + [position], has_extra_visit, my_count)
+            travel(next_cave, my_path + [position], has_extra_visit)
 
     # Begin recursive search of all paths
     travel(caves["start"], has_extra_visit=extra_visit)
