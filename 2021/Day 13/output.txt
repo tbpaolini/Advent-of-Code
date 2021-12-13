@@ -1,0 +1,9 @@
+Part 1: 653 dots
+
+Part 2:
+o    o  o ooo  oooo ooo  ooo  ooo  o  o
+o    o o  o  o o    o  o o  o o  o o o
+o    oo   o  o ooo  ooo  o  o o  o oo
+o    o o  ooo  o    o  o ooo  ooo  o o
+o    o o  o o  o    o  o o    o o  o o
+oooo o  o o  o oooo ooo  o    o  o o  o
