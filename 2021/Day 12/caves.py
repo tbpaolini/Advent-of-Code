@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import Dict
-from copy import copy, deepcopy
+from copy import deepcopy
 
-with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 12\test_input1.txt", "rt") as file:
+with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 12\input.txt", "rt") as file:
     nodes = []
     for line in file:
         nodes += [tuple(line.rstrip().split("-"))]
@@ -50,6 +50,13 @@ for point_a, point_b in nodes:
     cave_a.add_joint(cave_b)
 
 
+def is_sublist(list1:list, list2:list) -> bool:
+    size = len(list1)
+    for i in range(len(list2) - len(list1) + 1):
+        if list2[i : size+i] == list1: return True
+    else:
+        return False
+
 def find_path(caves:dict):
     paths = set()
     max_visited = 0
@@ -57,8 +64,7 @@ def find_path(caves:dict):
     def travel(position:Cave, my_path:list=[], history:Dict[Cave,set]={}):
         nonlocal paths, max_visited
 
-        my_history = deepcopy(history)
-        my_history.setdefault(position, {"start"})
+        if (position == "start") and (len(my_path) > 1): return
 
         if position == "end":
             # num_visited = 0
@@ -70,19 +76,27 @@ def find_path(caves:dict):
             paths.add(tuple(my_path + [position]))
             return
         
-        my_exits = position.joints - my_history[position]
+        my_history = deepcopy(history)
+        my_history.setdefault(position, set())
+        my_exits = position.joints #- my_history[position]
 
         for next_cave in my_exits:
             if (next_cave.type == "small") and (next_cave in my_path):
                 continue
-            else:
-                my_history[position].add(next_cave)
-                travel(next_cave, my_path + [position], my_history)
+            
+            if len(my_path) > 1:
+                node = [my_path[-1], position]
+                if is_sublist(node, my_path):
+                    continue
+
+            my_history[position].add(next_cave)
+            travel(next_cave, my_path + [position], my_history)
 
     travel(caves["start"])
     return paths
 
-test = find_path(Cave.cave_system)
+routes = find_path(Cave.cave_system)
+print(f"Part 1: {len(routes)}")
 
 def print_paths(paths):
     for path in paths:
