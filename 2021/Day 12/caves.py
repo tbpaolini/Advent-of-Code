@@ -61,24 +61,16 @@ def find_path(caves:dict):
     paths = set()
     max_visited = 0
 
-    def travel(position:Cave, my_path:list=[], history:Dict[Cave,set]={}):
+    def travel(position:Cave, my_path:list=[]):
         nonlocal paths, max_visited
 
         if (position == "start") and (len(my_path) > 1): return
 
         if position == "end":
-            # num_visited = 0
-            # for cave in set(my_path):
-            #     if cave.type == "small": num_visited += 1
-            # if num_visited < max_visited: return
-            # if num_visited > max_visited: paths.clear()
-            # max_visited = num_visited
             paths.add(tuple(my_path + [position]))
             return
         
-        my_history = deepcopy(history)
-        my_history.setdefault(position, set())
-        my_exits = position.joints #- my_history[position]
+        my_exits = position.joints
 
         for next_cave in my_exits:
             if (next_cave.type == "small") and (next_cave in my_path):
@@ -89,8 +81,7 @@ def find_path(caves:dict):
                 if is_sublist(node, my_path):
                     continue
 
-            my_history[position].add(next_cave)
-            travel(next_cave, my_path + [position], my_history)
+            travel(next_cave, my_path + [position])
 
     travel(caves["start"])
     return paths
