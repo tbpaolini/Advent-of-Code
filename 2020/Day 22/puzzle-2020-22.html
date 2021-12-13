@@ -1,0 +1,98 @@
+<h2>--- Day 22: Crab Combat ---</h2><p>It only takes a few hours of sailing the ocean on a raft for boredom to sink in. Fortunately, you brought a small deck of <a href="/2019/day/22">space cards</a>! You'd like to play a game of <em>Combat</em>, and there's even an opponent available: a small crab that climbed aboard your raft before you left.</p>
+<p>Fortunately, it doesn't take long to teach the crab the rules.</p>
+<p>Before the game starts, split the cards so each player has their own deck (your puzzle input). Then, the game consists of a series of <em>rounds</em>: both players draw their top card, and the player with the higher-valued card wins the round. The winner keeps both cards, placing them on the bottom of their own deck so that the winner's card is above the other card. If this causes a player to have all of the cards, they win, and the game ends.</p>
+<p>For example, consider the following starting decks:</p>
+<pre><code>Player 1:
+9
+2
+6
+3
+1
+
+Player 2:
+5
+8
+4
+7
+10
+</code></pre>
+<p>This arrangement means that player 1's deck contains 5 cards, with <code>9</code> on top and <code>1</code> on the bottom; player 2's deck also contains 5 cards, with <code>5</code> on top and <code>10</code> on the bottom.</p>
+<p>The first round begins with both players drawing the top card of their decks: <code>9</code> and <code>5</code>. Player 1 has the higher card, so both cards move to the bottom of player 1's deck such that <code>9</code> is above <code>5</code>. In total, it takes 29 rounds before a player has all of the cards:</p>
+<pre><code>-- Round 1 --
+Player 1's deck: 9, 2, 6, 3, 1
+Player 2's deck: 5, 8, 4, 7, 10
+Player 1 plays: 9
+Player 2 plays: 5
+Player 1 wins the round!
+
+-- Round 2 --
+Player 1's deck: 2, 6, 3, 1, 9, 5
+Player 2's deck: 8, 4, 7, 10
+Player 1 plays: 2
+Player 2 plays: 8
+Player 2 wins the round!
+
+-- Round 3 --
+Player 1's deck: 6, 3, 1, 9, 5
+Player 2's deck: 4, 7, 10, 8, 2
+Player 1 plays: 6
+Player 2 plays: 4
+Player 1 wins the round!
+
+-- Round 4 --
+Player 1's deck: 3, 1, 9, 5, 6, 4
+Player 2's deck: 7, 10, 8, 2
+Player 1 plays: 3
+Player 2 plays: 7
+Player 2 wins the round!
+
+-- Round 5 --
+Player 1's deck: 1, 9, 5, 6, 4
+Player 2's deck: 10, 8, 2, 7, 3
+Player 1 plays: 1
+Player 2 plays: 10
+Player 2 wins the round!
+
+...several more rounds pass...
+
+-- Round 27 --
+Player 1's deck: 5, 4, 1
+Player 2's deck: 8, 9, 7, 3, 2, 10, 6
+Player 1 plays: 5
+Player 2 plays: 8
+Player 2 wins the round!
+
+-- Round 28 --
+Player 1's deck: 4, 1
+Player 2's deck: 9, 7, 3, 2, 10, 6, 8, 5
+Player 1 plays: 4
+Player 2 plays: 9
+Player 2 wins the round!
+
+-- Round 29 --
+Player 1's deck: 1
+Player 2's deck: 7, 3, 2, 10, 6, 8, 5, 9, 4
+Player 1 plays: 1
+Player 2 plays: 7
+Player 2 wins the round!
+
+
+== Post-game results ==
+Player 1's deck: 
+Player 2's deck: 3, 2, 10, 6, 8, 5, 9, 4, 7, 1
+</code></pre>
+<p>Once the game ends, you can calculate the winning player's <em>score</em>. The bottom card in their deck is worth the value of the card multiplied by 1, the second-from-the-bottom card is worth the value of the card multiplied by 2, and so on. With 10 cards, the top card is worth the value on the card multiplied by 10. In this example, the winning player's score is:</p>
+<pre><code>   3 * 10
++  2 *  9
++ 10 *  8
++  6 *  7
++  8 *  6
++  5 *  5
++  9 *  4
++  4 *  3
++  7 *  2
++  1 *  1
+= 306
+</code></pre>
+<p>So, once the game ends, the winning player's score is <em><code>306</code></em>.</p>
+<p>Play the small crab in a game of Combat using the two decks you just dealt. <em>What is the winning player's score?</em></p>
