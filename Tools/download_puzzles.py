@@ -10,7 +10,7 @@ session = input("Session ID: ").strip()
 article_regex = re.compile(r"(?ms)\<article.*?\>(.*)</article.*?\>")
 today = date.today()
 
-for year in range(2015, 2021):
+for year in range(2015, 2022):
     for day in range(1, 26):
         if date(year, 12, day) > today: break
         my_path = Path(f"{year}\Day {day}\puzzle-{year}-{day}.html")
