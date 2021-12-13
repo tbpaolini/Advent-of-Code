@@ -94,6 +94,11 @@ def print_paths(paths):
         text = ", ".join(cave.name for cave in path)
         print(text)
 
+# Part 1:
 # 39444 - too high
 # 25066 - too high
 #  1843 - too low
+
+# Part 2:
+# 15020 - too low
+# 23786 - too low
