@@ -6,12 +6,9 @@ Packet = namedtuple("Packet", "version type_id parent payload")
 
 class Decoder():
 
-    def __init__(self, file_path:str="input.txt") -> None:
+    def __init__(self, data:str) -> None:
         
-        with open(file_path, "rt") as file:
-            raw_text = file.read().strip()
-        
-        raw_bytes = bytes.fromhex(raw_text)
+        raw_bytes = bytes.fromhex(data)
         self.bits = deque()
         for value in raw_bytes:
             self.bits.extend(
@@ -20,6 +17,7 @@ class Decoder():
             )
         
         self.packets:Dict[UUID,Packet] = {}
+        self.version_sum = 0
     
     def next_bits(self, amount:int) -> int:
         output = 0
@@ -40,6 +38,7 @@ class Decoder():
         version = self.next_bits(3)
         type_id = self.next_bits(3)
         bit_count += 6
+        self.version_sum += version
 
         if type_id == 4:
             
@@ -94,7 +93,11 @@ class StopDecoding(Exception):
 
 
 if __name__ == "__main__":
-    transmission = Decoder(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 16\input.txt")
+
+    with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 16\input.txt", "rt") as file:
+        raw_text = file.read().strip()
+    
+    transmission = Decoder(raw_text)
     transmission.decode()
     
-    versions_sum = sum(packet.version for packet in transmission.packets)
+    print(f"Part 1: {transmission.version_sum}")
