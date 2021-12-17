@@ -1,6 +1,6 @@
 from collections import deque, namedtuple
-from typing import Tuple
-from uuid import uuid4
+from typing import Dict, Tuple
+from uuid import UUID, uuid4
 
 Packet = namedtuple("Packet", "version type_id parent payload")
 
@@ -19,13 +19,13 @@ class Decoder():
                 for n in range(7, -1, -1)
             )
         
-        self.packets = {}
+        self.packets:Dict[UUID,Packet] = {}
     
     def next_bits(self, amount:int) -> int:
         output = 0
         for bit in range(amount):
             try:
-                output << 1
+                output <<= 1
                 output |= self.bits.popleft()
             except IndexError:
                 raise StopDecoding("Reached the end of the bit stream.")
@@ -47,7 +47,7 @@ class Decoder():
             separator = 1
             while separator == 1:
                 separator = self.next_bits(1)
-                payload << 4
+                payload <<= 4
                 payload |= self.next_bits(4)
                 bit_count += 5
         
@@ -65,6 +65,7 @@ class Decoder():
                     payload += [subpacket]
                     decoded_size += packet_size
                     bit_count += packet_size
+                assert decoded_size == max_bits
             
             elif length_type == 1:
                 max_packets = self.next_bits(11)
@@ -74,7 +75,8 @@ class Decoder():
                     payload += [subpacket]
                     bit_count += packet_size
         
-        packet = Packet(uuid, version, type_id, parent, payload)
+        packet = Packet(version, type_id, parent, payload)
+        assert uuid not in self.packets
         self.packets[uuid] = packet
         return (packet, bit_count)
     
@@ -93,3 +95,6 @@ class StopDecoding(Exception):
 
 if __name__ == "__main__":
     transmission = Decoder(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 16\input.txt")
+    transmission.decode()
+    
+    versions_sum = sum(packet.version for packet in transmission.packets)
