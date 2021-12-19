@@ -1,6 +1,7 @@
 from __future__ import annotations
 from math import ceil, floor, prod
 from collections import deque
+from itertools import product
 
 with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 18\input.txt", "rt") as file:
     homework = deque(eval(line) for line in file)
@@ -39,6 +40,21 @@ class SnailfishNumber():
             else:
                 # When the element is an integer, add it and its attributes to the values list
                 self.values += [SnailfishValue(value, pos, depth, path.copy())]
+    
+    def update_number(self):
+        """Rebuild the nested list that represents the snailfish number."""
+        
+        # Empty binary tree of depth 4
+        root = [[[[[], []], [[], []]], [[[], []], [[], []]]], [[[[], []], [[], []]], [[[], []], [[], []]]]]
+        
+        # Navigate through the tree and insert the values
+        for integer in self.values:
+            tree = root                                     # Start from the root node
+            for node in integer.path: tree = tree[node]     # Go down a depth following the value's path
+            tree[integer.pos] = integer.value               # Insert value on its position in the node
+        
+        # Replace the old nested list by the new one
+        self.number = root
     
     def __len__(self) -> int:
         """Amount of integer values in the shellfish number."""
@@ -154,6 +170,9 @@ class SnailfishNumber():
             
             # Exit the reducing loop when there are no more explodes or splits
             break
+
+        # Rebuild the representation of the snailfish number
+        self.update_number()
     
     def magnitude(self) -> int:
 
