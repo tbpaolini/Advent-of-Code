@@ -1,10 +1,9 @@
 from __future__ import annotations
 from math import ceil, floor, prod
-from collections import deque
-from itertools import product
+from itertools import permutations
 
-with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 18\input.txt", "rt") as file:
-    homework = deque(eval(line) for line in file)
+with open("input.txt", "rt") as file:
+    homework = tuple(eval(line) for line in file)
 
 class SnailfishValue():
 
@@ -175,9 +174,13 @@ class SnailfishNumber():
         self.update_number()
     
     def magnitude(self) -> int:
+        """Calculate the magnitude of the snailfish number.
+        Values on position 0 have weight 3, and those on position 1 have weight 2."""
 
         magnitude = 0
 
+        # The value is multiplied by 3 for each [0] in its path,
+        # and by 2 for each [1] on the path
         for integer in self.values:
             full_path = integer.path + [integer.pos]
             multiplier = prod(3 if index==0 else 2 for index in full_path)
@@ -186,13 +189,23 @@ class SnailfishNumber():
         return magnitude
 
 if __name__ == "__main__":
-    result = SnailfishNumber(homework.popleft())
-    while homework:
-        result = result + SnailfishNumber(homework.popleft())
+
+    # Part 1
+    
+    result = SnailfishNumber(homework[0])
+    for number in homework[1:]:
+        result = result + SnailfishNumber(number)
     
     magnitude = result.magnitude()
     
-    print(magnitude)
+    print(f"Part 1: {magnitude}")
 
-# Part 1:
-# 4074 - too high
+    # Part 2
+
+    max_magniture = 0
+
+    for number_a, number_b in permutations(homework, 2):
+        my_sum = SnailfishNumber(number_a) + SnailfishNumber(number_b)
+        max_magniture = max(my_sum.magnitude(), max_magniture)
+    
+    print(f"Part 2: {max_magniture}")
