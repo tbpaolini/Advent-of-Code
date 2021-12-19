@@ -2,9 +2,6 @@ from __future__ import annotations
 from math import ceil, floor, prod
 from itertools import permutations
 
-with open("input.txt", "rt") as file:
-    homework = tuple(eval(line) for line in file)
-
 class SnailfishValue():
 
     def __init__(self, value:int, pos:int, depth:int, path:list) -> None:
@@ -27,11 +24,11 @@ class SnailfishNumber():
     
     def refresh_values(self, pair:list[list|int]=None, depth:int=0, path:list=[]) -> None:
         
-        # When at the root node of the shellfish number
-        if pair is None: pair = self.number     # The input is the whole shellfish number itself
+        # When at the root node of the snailfish number
+        if pair is None: pair = self.number     # The input is the whole snailfish number itself
         if depth == 0: self.values.clear()      # Clear the list of values
 
-        # Recursively navigate through the shellfish number
+        # Recursively navigate through the snailfish number
         for pos, value in enumerate(pair):
             if isinstance(value, list):
                 # When the element is another list, call the function on that list
@@ -56,11 +53,11 @@ class SnailfishNumber():
         self.number = root
     
     def __len__(self) -> int:
-        """Amount of integer values in the shellfish number."""
+        """Amount of integer values in the snailfish number."""
         return len(self.values)
     
     def __repr__(self) -> str:
-        """Constructor of the shellfish number."""
+        """Constructor of the snailfish number."""
         return f"SnailfishNumber({self.number})"
     
     def __add__(self, other:SnailfishNumber) -> SnailfishNumber:
@@ -155,11 +152,11 @@ class SnailfishNumber():
                     my_depth = integer.depth + 1
                     new_path = integer.path + [integer.pos]
 
-                    # Add the new pair to the shellfish number
+                    # Add the new pair to the snailfish number
                     new_value_1 = SnailfishValue(new_int_1, new_pos_1, my_depth, new_path)
                     new_value_2 = SnailfishValue(new_int_2, new_pos_2, my_depth, new_path)
 
-                    # Rebuild the list of values of the shellfish number
+                    # Rebuild the list of values of the snailfish number
                     self.values = self.values[:index] + [new_value_1, new_value_2] + self.values[index+1:]
                     splitted = True
                     break
@@ -189,6 +186,9 @@ class SnailfishNumber():
         return magnitude
 
 if __name__ == "__main__":
+
+    with open("input.txt", "rt") as file:
+        homework = tuple(eval(line) for line in file)
 
     # Part 1
     
