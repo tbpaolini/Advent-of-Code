@@ -1,8 +1,9 @@
 from __future__ import annotations
-from math import ceil, floor
+from math import ceil, floor, prod
+from collections import deque
 
 with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 18\input.txt", "rt") as file:
-    homework = tuple(eval(line) for line in file)
+    homework = deque(eval(line) for line in file)
 
 class SnailfishValue():
 
@@ -22,6 +23,7 @@ class SnailfishNumber():
         self.number = number                    # The nested lists that represent the snailfish number
         self.values:list[SnailfishValue] = []   # List of each integer value and its attributes
         self.refresh_values()                   # Populate the above list
+        self.reduce()                           # Perform reduction according to the puzzle's rules
     
     def refresh_values(self, pair:list[list|int]=None, depth:int=0, path:list=[]) -> None:
         
@@ -152,12 +154,26 @@ class SnailfishNumber():
             
             # Exit the reducing loop when there are no more explodes or splits
             break
+    
+    def magnitude(self) -> int:
 
-# x = SnailfishNumber([[[[4,3],4],4],[7,[[8,4],9]]])
-# y = SnailfishNumber([1,1])
-# x += y
+        magnitude = 0
 
-a = SnailfishNumber([[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]])
-b = SnailfishNumber([7,[[[3,7],[4,3]],[[6,3],[8,8]]]])
-c = SnailfishNumber([[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]])
-d = a + b
+        for integer in self.values:
+            full_path = integer.path + [integer.pos]
+            multiplier = prod(3 if index==0 else 2 for index in full_path)
+            magnitude += integer.value * multiplier
+        
+        return magnitude
+
+if __name__ == "__main__":
+    result = SnailfishNumber(homework.popleft())
+    while homework:
+        result = result + SnailfishNumber(homework.popleft())
+    
+    magnitude = result.magnitude()
+    
+    print(magnitude)
+
+# Part 1:
+# 4074 - too high
