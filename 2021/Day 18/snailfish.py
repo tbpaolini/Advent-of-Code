@@ -83,7 +83,8 @@ class SnailfishNumber():
         while True:
             max_index = len(self) - 1
 
-            # Look for two pairs of integer on the same node
+            # Check pairs for explosions
+            exploded = False
             for index in range(max_index):
                 number_1 = self.values[index]
                 number_2 = self.values[index+1]
@@ -98,7 +99,7 @@ class SnailfishNumber():
                         # Add the left value to the left neighbor
                         neighbor_1 = self.values[index-1]
                         neighbor_1.value += number_1.value
-                    if index < max_index:
+                    if index < max_index-1:
                         # Add the right value to the right neighbor
                         neighbor_2 = self.values[index+2]
                         neighbor_2.value += number_2.value
@@ -112,37 +113,51 @@ class SnailfishNumber():
                     self.values[index] = SnailfishValue(0, new_pos, new_depth, new_path)
                     del self.values[index+1]
 
-                    # Check if any of the neighbors should split
-                    for neighbor in (neighbor_1, neighbor_2):
-                        if neighbor is not None and neighbor.value >= 10:
-                            
-                            # Calculate the values of the new pair
-                            new_int_1 = floor(neighbor.value / 2)
-                            new_int_2 = ceil(neighbor.value / 2)
-
-                            # Position of each value in the new pair
-                            new_pos_1 = 0
-                            new_pos_2 = 1
-
-                            # Calculate the path of the new pair
-                            my_depth = neighbor.depth + 1
-                            new_path = neighbor.path + [neighbor.pos]
-
-                            # Add the new pair to the shellfish number
-                            new_value_1 = SnailfishValue(new_int_1, new_pos_1, my_depth, new_path)
-                            new_value_2 = SnailfishValue(new_int_2, new_pos_2, my_depth, new_path)
-
-                            # Rebuild the list of values of the shellfish number
-                            old_index = self.values.index(neighbor)
-                            self.values = self.values[:old_index] + [new_value_1, new_value_2] + self.values[old_index+1:]
-                    
-                    # Restart the reducing loop if a explode or split happened
+                    exploded = True
                     break
-            
-            else:
-                # Exit the reducing loop when there are no more explodes or splits
-                break
+                
+            # Restart the reducing loop if an explode happened
+            if exploded: continue
 
-x = SnailfishNumber([[[[4,3],4],4],[7,[[8,4],9]]])
-y = SnailfishNumber([1,1])
-x += y
+            # Check values for splits
+            splitted = False
+            # for index, integer in enumerate(self.values):
+            for index in range(len(self)):
+                integer = self.values[index]
+                if integer.value >= 10:
+                    
+                    # Calculate the values of the new pair
+                    new_int_1 = floor(integer.value / 2)
+                    new_int_2 = ceil(integer.value / 2)
+
+                    # Position of each value in the new pair
+                    new_pos_1 = 0
+                    new_pos_2 = 1
+
+                    # Calculate the path of the new pair
+                    my_depth = integer.depth + 1
+                    new_path = integer.path + [integer.pos]
+
+                    # Add the new pair to the shellfish number
+                    new_value_1 = SnailfishValue(new_int_1, new_pos_1, my_depth, new_path)
+                    new_value_2 = SnailfishValue(new_int_2, new_pos_2, my_depth, new_path)
+
+                    # Rebuild the list of values of the shellfish number
+                    self.values = self.values[:index] + [new_value_1, new_value_2] + self.values[index+1:]
+                    splitted = True
+                    break
+
+            # Restart the reducing loop if a split happened
+            if splitted: continue
+            
+            # Exit the reducing loop when there are no more explodes or splits
+            break
+
+# x = SnailfishNumber([[[[4,3],4],4],[7,[[8,4],9]]])
+# y = SnailfishNumber([1,1])
+# x += y
+
+a = SnailfishNumber([[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]])
+b = SnailfishNumber([7,[[[3,7],[4,3]],[[6,3],[8,8]]]])
+c = SnailfishNumber([[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]])
+d = a + b
