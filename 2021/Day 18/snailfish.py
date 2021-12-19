@@ -2,9 +2,6 @@ from __future__ import annotations
 from math import ceil, floor, prod
 from itertools import permutations
 
-with open("input.txt", "rt") as file:
-    homework = tuple(eval(line) for line in file)
-
 class SnailfishValue():
 
     def __init__(self, value:int, pos:int, depth:int, path:list) -> None:
@@ -189,6 +186,9 @@ class SnailfishNumber():
         return magnitude
 
 if __name__ == "__main__":
+
+    with open("input.txt", "rt") as file:
+        homework = tuple(eval(line) for line in file)
 
     # Part 1
     
