@@ -1,6 +1,8 @@
 import numpy as np
 from random import randint
 
+# Work in progress (I will implement a proper pathfinding algorithm)
+
 with open("input.txt", "rt") as file:
     cave_map = []
     for line in file: cave_map.append([int(char) for char in line.rstrip()])
