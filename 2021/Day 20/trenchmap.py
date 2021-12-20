@@ -49,8 +49,8 @@ def decode(img_array:np.ndarray, decoding_table:Sequence[bool], steps:int=1) -> 
         # Copy the output array to the input for the next step
         input_array_pad = output_array
     
-    # Slice away the padded area from the image
-    return output_array[-height:-steps*2, -width:-steps*2]
+    # Slice away the padded area from the image to remove the artifacts around the edges
+    return output_array[:-steps*2, :-steps*2]
 
 def save_image(image:np.ndarray, file_name:str, scale:int=5) -> None:
     """Save the image to the 'images' subdirectory, scaled to a specified factor."""
