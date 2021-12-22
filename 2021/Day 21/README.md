@@ -18,6 +18,6 @@ All in all, what I did for part 2 (using recursion):
 
 Then the function returns 1 for who won and 0 for who lost. This value is multiplied by the number of times that the sum appears, and added to the win counts of the function. The function returns those counters for their callers, after all sums have been iterated. So the win counts are propagated all the way to the original function call, which returns the aggregate win counts of all possible game combinations.
 
-This code took 0.5 seconds to run on my computer. This time was surprisingly low for me, considering that literally trillions of games were accounted precisely. It was fast because of the results caching (or memoization, if you want the technical term) and aggregating the sums together.
+This code took 0.16 seconds to run on my computer. This time was surprisingly low for me, considering that literally trillions of games were accounted precisely. It was fast because of the results caching (or memoization, if you want the technical term) and aggregating the sums together.
 
 **My code:** [Parts 1 and 2](https://github.com/tbpaolini/Advent-of-Code/blob/master/2021/Day%2021/dirac-dice.py)
