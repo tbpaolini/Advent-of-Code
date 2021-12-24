@@ -48,6 +48,8 @@ class Cuboid:
             lower_vertex_is_inside = all(map(less_than_or_equal, other.min, myself.min))
             upper_vertex_is_inside = all(map(greater_than_or_equal, other.max, myself.max))
             enclosed = lower_vertex_is_inside and upper_vertex_is_inside
+            # enclosed2 = other.min.x <= myself.min.x and other.max.x >= myself.max.x and other.min.y <= myself.min.y and other.max.y >= myself.max.y and other.min.z <= myself.min.z and other.max.z >= myself.max.z
+            # assert enclosed == enclosed2
 
             # If the cuboid is fully enclosed, add it to the dictionary and mode to the next one
             if enclosed:
@@ -55,8 +57,8 @@ class Cuboid:
                 continue
 
             # Check for a partial overlap
-            intersect = lower_vertex_is_inside or upper_vertex_is_inside
-            # intersect = other.min.x <= myself.max.x and other.max.x >= myself.min.x and other.min.y <= myself.max.y and other.max.y >= myself.min.y and other.min.z <= myself.max.z and other.max.z >= myself.min.z
+            # intersect = lower_vertex_is_inside or upper_vertex_is_inside
+            intersect = other.min.x <= myself.max.x and other.max.x >= myself.min.x and other.min.y <= myself.max.y and other.max.y >= myself.min.y and other.min.z <= myself.max.z and other.max.z >= myself.min.z
             if intersect:
                 result["partial"].add(myself)
             
@@ -91,7 +93,7 @@ class Cuboid:
                     new_cuboids.add(new)
                 
                 # Above x-axis (yz-plane)
-                if myself.min.x < other.max.x < myself.min.x:
+                if myself.min.x < other.max.x < myself.max.x:
                     
                     # Exclude the intersecting part from the old cuboid
                     old_min = Coordinate(other.max.x + 1, myself.min.y, myself.min.z)
@@ -121,7 +123,7 @@ class Cuboid:
                     new_cuboids.add(new)
                 
                 # Above y-axis (xz-plane)
-                if myself.min.y < other.max.y < myself.min.y:
+                if myself.min.y < other.max.y < myself.max.y:
                     
                     # Exclude the intersecting part from the old cuboid
                     old_min = Coordinate(myself.min.x, other.max.y + 1, myself.min.z)
@@ -151,7 +153,7 @@ class Cuboid:
                     new_cuboids.add(new)
                 
                 # Above z-axis (xy-plane)
-                if myself.min.z < other.max.z < myself.min.z:
+                if myself.min.z < other.max.z < myself.max.z:
                     
                     # Exclude the intersecting part from the old cuboid
                     old_min = Coordinate(myself.min.x, myself.min.y, other.max.z + 1)
@@ -186,7 +188,7 @@ class Cuboid:
         """Calculate the volume of the cuboid cluster."""
         result = 0
         for cuboid in self.cluster:
-            result += (cuboid.max.x - cuboid.min.x + 1) * (cuboid.max.y - cuboid.min.y + 1) * (cuboid.max.z - cuboid.min.z + 1)
+            result += abs((cuboid.max.x - cuboid.min.x + 1) * (cuboid.max.y - cuboid.min.y + 1) * (cuboid.max.z - cuboid.min.z + 1))
         return result
 
 result = Cuboid.empty()
@@ -201,3 +203,5 @@ print(len(result.cluster))
 # https://old.reddit.com/r/adventofcode/comments/rlxhmg/2021_day_22_solutions/hpmgqn5/
 # 1268313839428137
 #   56139851991767
+#  158273978831275
+# 1559111472001834
