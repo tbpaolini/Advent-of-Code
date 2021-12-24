@@ -48,8 +48,6 @@ class Cuboid:
             lower_vertex_is_inside = all(map(less_than_or_equal, other.min, myself.min))
             upper_vertex_is_inside = all(map(greater_than_or_equal, other.max, myself.max))
             enclosed = lower_vertex_is_inside and upper_vertex_is_inside
-            # enclosed2 = other.min.x <= myself.min.x and other.max.x >= myself.max.x and other.min.y <= myself.min.y and other.max.y >= myself.max.y and other.min.z <= myself.min.z and other.max.z >= myself.max.z
-            # assert enclosed == enclosed2
 
             # If the cuboid is fully enclosed, add it to the dictionary and mode to the next one
             if enclosed:
@@ -57,7 +55,6 @@ class Cuboid:
                 continue
 
             # Check for a partial overlap
-            # intersect = lower_vertex_is_inside or upper_vertex_is_inside
             intersect = other.min.x <= myself.max.x and other.max.x >= myself.min.x and other.min.y <= myself.max.y and other.max.y >= myself.min.y and other.min.z <= myself.max.z and other.max.z >= myself.min.z
             if intersect:
                 result["partial"].add(myself)
@@ -79,91 +76,97 @@ class Cuboid:
             for myself in intersections["partial"]:
                 
                 # Below x-axis (yz-plane)
-                if myself.min.x <= other.min.x <= myself.max.x:
+                if other.min.x in range(myself.min.x+1, myself.max.x+1):
                     
                     # Exclude the intersecting part from the old cuboid
                     old_min = Coordinate(myself.min.x, myself.min.y, myself.min.z)
                     old_max = Coordinate(other.min.x - 1, myself.max.y, myself.max.z)
-                    myself = Vertex(old_min, old_max)
                     
                     # Include the part outside the intersection
                     new_min = Coordinate(other.min.x, myself.min.y, myself.min.z)
                     new_max = Coordinate(myself.max.x, myself.max.y, myself.max.z)
                     new = Vertex(new_min, new_max)
+                    
+                    myself = Vertex(old_min, old_max)
                     new_cuboids.add(new)
                 
                 # Above x-axis (yz-plane)
-                if myself.min.x < other.max.x < myself.max.x:
+                if other.max.x in range(myself.min.x, myself.max.x):
                     
                     # Exclude the intersecting part from the old cuboid
                     old_min = Coordinate(other.max.x + 1, myself.min.y, myself.min.z)
                     old_max = Coordinate(myself.max.x, myself.max.y, myself.max.z)
-                    myself = Vertex(old_min, old_max)
                     
                     # Include the part outside the intersection
                     new_min = Coordinate(myself.min.y, myself.min.y, myself.min.z)
                     new_max = Coordinate(other.max.x, myself.max.y, myself.max.z)
                     new = Vertex(new_min, new_max)
+                    
+                    myself = Vertex(old_min, old_max)
                     new_cuboids.add(new)
                     
                 ####
                     
                 # Below y-axis (xz-plane)
-                if myself.min.y <= other.min.y <= myself.max.y:
+                if other.min.y in range(myself.min.y+1, myself.max.y+1):
                     
                     # Exclude the intersecting part from the old cuboid
                     old_min = Coordinate(myself.min.x, myself.min.y, myself.min.z)
                     old_max = Coordinate(myself.max.x, other.min.y - 1, myself.max.z)
-                    myself = Vertex(old_min, old_max)
                     
                     # Include the part outside the intersection
                     new_min = Coordinate(myself.min.x, other.min.y, myself.min.z)
                     new_max = Coordinate(myself.max.x, myself.max.y, myself.max.z)
                     new = Vertex(new_min, new_max)
+                    
+                    myself = Vertex(old_min, old_max)
                     new_cuboids.add(new)
                 
                 # Above y-axis (xz-plane)
-                if myself.min.y < other.max.y < myself.max.y:
+                if other.max.y in range(myself.min.y, myself.max.y):
                     
                     # Exclude the intersecting part from the old cuboid
                     old_min = Coordinate(myself.min.x, other.max.y + 1, myself.min.z)
                     old_max = Coordinate(myself.max.x, myself.max.y, myself.max.z)
-                    myself = Vertex(old_min, old_max)
                     
                     # Include the part outside the intersection
                     new_min = Coordinate(myself.min.y, myself.min.y, myself.min.z)
                     new_max = Coordinate(myself.max.x, other.max.y, myself.max.z)
                     new = Vertex(new_min, new_max)
+                    
+                    myself = Vertex(old_min, old_max)
                     new_cuboids.add(new)
 
                 ####
 
                 # Below z-axis (xy-plane)
-                if myself.min.z <= other.min.z <= myself.max.z:
+                if other.min.z in range(myself.min.z+1, myself.max.z+1):
                     
                     # Exclude the intersecting part from the old cuboid
                     old_min = Coordinate(myself.min.x, myself.min.y, myself.min.z)
                     old_max = Coordinate(myself.max.x, myself.max.y, other.min.z - 1)
-                    myself = Vertex(old_min, old_max)
                     
                     # Include the part outside the intersection
                     new_min = Coordinate(myself.min.x, myself.min.y, other.min.z)
                     new_max = Coordinate(myself.max.x, myself.max.y, myself.max.z)
                     new = Vertex(new_min, new_max)
+                    
+                    myself = Vertex(old_min, old_max)
                     new_cuboids.add(new)
                 
                 # Above z-axis (xy-plane)
-                if myself.min.z < other.max.z < myself.max.z:
+                if other.max.z in range(myself.min.z, myself.max.z):
                     
                     # Exclude the intersecting part from the old cuboid
                     old_min = Coordinate(myself.min.x, myself.min.y, other.max.z + 1)
                     old_max = Coordinate(myself.max.x, myself.max.y, myself.max.z)
-                    myself = Vertex(old_min, old_max)
                     
                     # Include the part outside the intersection
                     new_min = Coordinate(myself.min.y, myself.min.y, myself.min.z)
                     new_max = Coordinate(myself.max.x, myself.max.y, other.max.z)
                     new = Vertex(new_min, new_max)
+                    
+                    myself = Vertex(old_min, old_max)
                     new_cuboids.add(new)
             
             # Remove from the cluster cuboids that intersect
