@@ -8,7 +8,7 @@ Coordinate = namedtuple("Coordinate", "x y z")
 Cuboid = namedtuple("Cuboid", "min max")
 instructions:list[Instruction] = []
 
-with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 22\input.txt") as file:
+with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 22\test_input.txt") as file:
     for line in file:
         turn, x1, x2, y1, y2, z1, z2 = input_regex.match(line).groups()
         start = Coordinate(int(x1), int(y1), int(z1))
@@ -37,86 +37,16 @@ for turn, new in instructions:
             new_core += [old]
             continue
 
-        # X
-        if new.min.x in range(old.min.x+1, old.max.x+1):
-            new_core += [
-                Cuboid(
-                    min = Coordinate(new.min.x, old.min.y, old.min.z),
-                    max = Coordinate(old.max.x, old.max.y, old.max.z)
-                )
-            ]
-            
-            old = Cuboid(
-                min = Coordinate(old.min.x, old.min.y, old.min.z),
-                max = Coordinate(new.min.x - 1, old.max.y, old.max.z)
-            )
+        # x-axis
+        if old.min.x <= new.max.x <= old.max.x:  # Positive direction
+            new_core += [Cuboid(Coordinate(new.max.x+1, old.min.y, old.min.z), Coordinate(old.max.x, old.max.y, old.max.z))]
+            old = Cuboid(Coordinate(new.min.x, old.min.y, old.min.z), Coordinate(old.max.x, old.max.y, old.max.z))
+
+        if old.min.x <= new.min.x <= old.max.x:  # Negative direction
+            new_core += [Cuboid(Coordinate(old.min.x, old.min.y, old.min.z), Coordinate(new.min.x-1, old.max.y, old.max.z))]
+            old = Cuboid(Coordinate(old.max.x, old.min.y, old.min.z), Coordinate(new.min.x, old.max.y, old.max.z))
+
         
-        if new.max.x in range(old.min.x, old.max.x):
-            new_core += [
-                Cuboid(
-                    min = Coordinate(old.min.x, old.min.y, old.min.z),
-                    max = Coordinate(new.max.x, old.max.y, old.max.z)
-                )
-            ]
-            
-            old = Cuboid(
-                min = Coordinate(new.max.x + 1, old.min.y, old.min.z),
-                max = Coordinate(old.max.x, old.max.y, old.max.z)
-            )
-        
-        # Y
-        if new.min.y in range(old.min.y+1, old.max.y+1):
-            new_core += [
-                Cuboid(
-                    min = Coordinate(old.min.x, new.min.y, old.min.z),
-                    max = Coordinate(old.max.x, old.max.y, old.max.z)
-                )
-            ]
-            
-            old = Cuboid(
-                min = Coordinate(old.min.x, old.min.y, old.min.z),
-                max = Coordinate(old.max.x, new.min.y - 1, old.max.z)
-            )
-        
-        if new.max.y in range(old.min.y, old.max.y):
-            new_core += [
-                Cuboid(
-                    min = Coordinate(old.min.x, old.min.y, old.min.z),
-                    max = Coordinate(old.max.x, new.max.y, old.max.z)
-                )
-            ]
-            
-            old = Cuboid(
-                min = Coordinate(old.min.x, new.max.y + 1, old.min.z),
-                max = Coordinate(old.max.x, old.max.y, old.max.z)
-            )
-        
-        # Z
-        if new.min.z in range(old.min.z+1, old.max.z+1):
-            new_core += [
-                Cuboid(
-                    min = Coordinate(old.min.x, old.min.y, new.min.z),
-                    max = Coordinate(old.max.x, old.max.y, old.max.z)
-                )
-            ]
-            
-            old = Cuboid(
-                min = Coordinate(old.min.x, old.min.y, old.min.z),
-                max = Coordinate(old.max.x, old.max.y, new.min.z - 1)
-            )
-        
-        if new.max.z in range(old.min.z, old.max.z):
-            new_core += [
-                Cuboid(
-                    min = Coordinate(old.min.x, old.min.y, old.min.z),
-                    max = Coordinate(old.max.x, old.max.y, new.max.z)
-                )
-            ]
-            
-            old = Cuboid(
-                min = Coordinate(old.min.x, old.min.y, new.max.z + 1),
-                max = Coordinate(old.max.x, old.max.y, old.max.z)
-            )
     
     if turn == "on": new_core += [new]
     else: assert turn == "off"
@@ -126,9 +56,9 @@ print(len(core))
 
 volume = 0
 for block in core:
-    assert block.max.x >= block.min.x
-    assert block.max.y >= block.min.y
-    assert block.max.z >= block.min.z
+    # assert block.max.x >= block.min.x
+    # assert block.max.y >= block.min.y
+    # assert block.max.z >= block.min.z
     volume += (block.max.x - block.min.x + 1) * (block.max.y - block.min.y + 1) * (block.max.z - block.min.z + 1)
 
 print(volume)
