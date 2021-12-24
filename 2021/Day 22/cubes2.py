@@ -40,6 +40,10 @@ for turn, new in instructions:
         # x-axis
         if old.min.x <= new.max.x <= old.max.x:  # Positive direction
             new_core += [Cuboid(Coordinate(new.max.x+1, old.min.y, old.min.z), Coordinate(old.max.x, old.max.y, old.max.z))]
+            old = Cuboid(Coordinate(old.min.x, old.min.y, old.min.z), Coordinate(new.max.x, old.max.y, old.max.z))
+
+        if old.min.x <= new.min.x <= old.max.x:  # Negative direction
+            new_core += [Cuboid(Coordinate(old.min.x, old.min.y, old.min.z), Coordinate(new.min.x-1, old.max.y, old.max.z))]
             old = Cuboid(Coordinate(new.min.x, old.min.y, old.min.z), Coordinate(old.max.x, old.max.y, old.max.z))
 
         if old.min.x <= new.min.x <= old.max.x:  # Negative direction
