@@ -5,6 +5,11 @@ from operator import ge as greater_than_or_equal
 import re
 from typing import NamedTuple
 
+""""NOTE
+This was my first attempt at solving part 2. I could not get it to work, so I began again from scratch.
+For the solution that actually worked, please see the file cubes2.py
+"""
+
 input_regex = re.compile(r"(?m)(on|off) x=(-?\d+)\.\.(-?\d+),y=(-?\d+)..(-?\d+),z=(-?\d+)..(-?\d+)")
 Instruction = namedtuple("Instruction", "turn start end")
 Coordinate = namedtuple("Coordinate", "x y z")
