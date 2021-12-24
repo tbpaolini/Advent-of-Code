@@ -87,8 +87,8 @@ class Cuboid:
                     new_max = Coordinate(myself.max.x, myself.max.y, myself.max.z)
                     new = Vertex(new_min, new_max)
                     
-                    myself = Vertex(old_min, old_max)
-                    new_cuboids.add(new)
+                    myself = new
+                    new_cuboids.add(Vertex(old_min, old_max))
                 
                 # Above x-axis (yz-plane)
                 if other.max.x in range(myself.min.x, myself.max.x):
@@ -102,8 +102,8 @@ class Cuboid:
                     new_max = Coordinate(other.max.x, myself.max.y, myself.max.z)
                     new = Vertex(new_min, new_max)
                     
-                    myself = Vertex(old_min, old_max)
-                    new_cuboids.add(new)
+                    myself = new
+                    new_cuboids.add(Vertex(old_min, old_max))
                     
                 ####
                     
@@ -119,8 +119,8 @@ class Cuboid:
                     new_max = Coordinate(myself.max.x, myself.max.y, myself.max.z)
                     new = Vertex(new_min, new_max)
                     
-                    myself = Vertex(old_min, old_max)
-                    new_cuboids.add(new)
+                    myself = new
+                    new_cuboids.add(Vertex(old_min, old_max))
                 
                 # Above y-axis (xz-plane)
                 if other.max.y in range(myself.min.y, myself.max.y):
@@ -134,8 +134,8 @@ class Cuboid:
                     new_max = Coordinate(myself.max.x, other.max.y, myself.max.z)
                     new = Vertex(new_min, new_max)
                     
-                    myself = Vertex(old_min, old_max)
-                    new_cuboids.add(new)
+                    myself = new
+                    new_cuboids.add(Vertex(old_min, old_max))
 
                 ####
 
@@ -151,8 +151,8 @@ class Cuboid:
                     new_max = Coordinate(myself.max.x, myself.max.y, myself.max.z)
                     new = Vertex(new_min, new_max)
                     
-                    myself = Vertex(old_min, old_max)
-                    new_cuboids.add(new)
+                    myself = new
+                    new_cuboids.add(Vertex(old_min, old_max))
                 
                 # Above z-axis (xy-plane)
                 if other.max.z in range(myself.min.z, myself.max.z):
@@ -166,8 +166,8 @@ class Cuboid:
                     new_max = Coordinate(myself.max.x, myself.max.y, other.max.z)
                     new = Vertex(new_min, new_max)
                     
-                    myself = Vertex(old_min, old_max)
-                    new_cuboids.add(new)
+                    myself = new
+                    new_cuboids.add(Vertex(old_min, old_max))
             
             # Remove from the cluster cuboids that intersect
             self.cluster -= intersections["full"]
@@ -209,3 +209,10 @@ print(len(result.cluster))
 #  158273978831275
 # 1559111472001834
 # 1184279658831399
+
+a = Cuboid(Coordinate(-1, -1, -1), Coordinate(1, 1, 1))
+b = Cuboid(Coordinate(1, 1, 1), Coordinate(2, 2, 2))
+av = a.volume()
+bv = b.volume()
+r = a + b
+print(av, "+", bv, "=", r.volume())
