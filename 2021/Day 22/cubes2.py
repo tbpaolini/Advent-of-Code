@@ -8,7 +8,7 @@ Coordinate = namedtuple("Coordinate", "x y z")
 Cuboid = namedtuple("Cuboid", "min max")
 instructions:list[Instruction] = []
 
-with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 22\test_input.txt") as file:
+with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 22\input.txt") as file:
     for line in file:
         turn, x1, x2, y1, y2, z1, z2 = input_regex.match(line).groups()
         start = Coordinate(int(x1), int(y1), int(z1))
@@ -47,20 +47,20 @@ for turn, new in instructions:
             old = Cuboid(Coordinate(new.min.x, old.min.y, old.min.z), Coordinate(old.max.x, old.max.y, old.max.z))
 
         # y-axis
-        if old.min.x <= new.max.x <= old.max.x:  # Positive direction
+        if old.min.y <= new.max.y <= old.max.y:  # Positive direction
             new_core += [Cuboid(Coordinate(old.min.x, new.max.y+1, old.min.z), Coordinate(old.max.x, old.max.y, old.max.z))]
             old = Cuboid(Coordinate(old.min.x, old.min.y, old.min.z), Coordinate(old.max.x, new.max.y, old.max.z))
 
-        if old.min.x <= new.min.x <= old.max.x:  # Negative direction
+        if old.min.y <= new.min.y <= old.max.y:  # Negative direction
             new_core += [Cuboid(Coordinate(old.min.x, old.min.y, old.min.z), Coordinate(old.max.x, new.min.y-1, old.max.z))]
             old = Cuboid(Coordinate(old.min.x, new.min.y, old.min.z), Coordinate(old.max.x, old.max.y, old.max.z))
 
         # z-axis
-        if old.min.x <= new.max.x <= old.max.x:  # Positive direction
+        if old.min.z <= new.max.z <= old.max.z:  # Positive direction
             new_core += [Cuboid(Coordinate(old.min.x, old.min.y, new.max.z+1), Coordinate(old.max.x, old.max.y, old.max.z))]
             old = Cuboid(Coordinate(old.min.x, old.min.y, old.min.z), Coordinate(old.max.x, old.max.y, new.max.z))
 
-        if old.min.x <= new.min.x <= old.max.x:  # Negative direction
+        if old.min.z <= new.min.z <= old.max.z:  # Negative direction
             new_core += [Cuboid(Coordinate(old.min.x, old.min.y, old.min.z), Coordinate(old.max.x, old.max.y, new.min.z-1))]
             old = Cuboid(Coordinate(old.min.x, old.min.y, new.min.z), Coordinate(old.max.x, old.max.y, old.max.z))
     
