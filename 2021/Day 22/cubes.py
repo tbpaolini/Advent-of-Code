@@ -79,7 +79,7 @@ class Cuboid:
             for myself in intersections["partial"]:
                 
                 # Below x-axis (yz-plane)
-                if myself.min.x <= other.min.x <= myself.min.x:
+                if myself.min.x <= other.min.x <= myself.max.x:
                     
                     # Exclude the intersecting part from the old cuboid
                     old_min = Coordinate(myself.min.x, myself.min.y, myself.min.z)
@@ -109,7 +109,7 @@ class Cuboid:
                 ####
                     
                 # Below y-axis (xz-plane)
-                if myself.min.y <= other.min.y <= myself.min.y:
+                if myself.min.y <= other.min.y <= myself.max.y:
                     
                     # Exclude the intersecting part from the old cuboid
                     old_min = Coordinate(myself.min.x, myself.min.y, myself.min.z)
@@ -139,7 +139,7 @@ class Cuboid:
                 ####
 
                 # Below z-axis (xy-plane)
-                if myself.min.z <= other.min.z <= myself.min.z:
+                if myself.min.z <= other.min.z <= myself.max.z:
                     
                     # Exclude the intersecting part from the old cuboid
                     old_min = Coordinate(myself.min.x, myself.min.y, myself.min.z)
@@ -188,7 +188,7 @@ class Cuboid:
         """Calculate the volume of the cuboid cluster."""
         result = 0
         for cuboid in self.cluster:
-            result += abs((cuboid.max.x - cuboid.min.x + 1) * (cuboid.max.y - cuboid.min.y + 1) * (cuboid.max.z - cuboid.min.z + 1))
+            result += ((cuboid.max.x - cuboid.min.x + 1) * (cuboid.max.y - cuboid.min.y + 1) * (cuboid.max.z - cuboid.min.z + 1))
         return result
 
 result = Cuboid.empty()
@@ -205,3 +205,4 @@ print(len(result.cluster))
 #   56139851991767
 #  158273978831275
 # 1559111472001834
+# 1184279658831399
