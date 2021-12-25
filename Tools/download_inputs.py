@@ -6,7 +6,7 @@ from time import sleep
 
 session = input("Session ID: ").strip()
 
-for year in range(2015, 2021):
+for year in range(2015, 2022):
     for day in range(1, 26):
         my_path = Path(f"{year}\Day {day}\input.txt")
         if my_path.exists(): continue
