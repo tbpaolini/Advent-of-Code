@@ -7,12 +7,12 @@ import numpy as np
 Node = namedtuple("Node", "x y")
 Path = namedtuple("Path", "risk node")
 
-with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 15\test_input.txt", "rt") as file:
+with open("input.txt", "rt") as file:
     cave_map = []
     for line in file: cave_map.append([int(char) for char in line.rstrip()])
     cave_map = np.array(cave_map)
 
-def path_find(cave_map:np.ndarray, start:Node, goal:Node) -> int:
+def pathfind_A_star(cave_map:np.ndarray, start:Node, goal:Node) -> int:
     """Implementation of the A* algorithm to find the least risk path between
     two nodes in the cave"""
 
@@ -67,26 +67,3 @@ risk_part1 = path_find(cave_map, Node(0,0), Node(goal_x-1, goal_y-1))
 total_time_part1 = perf_counter() - start_time_part1
 
 print(f"Part 1: {risk_part1} (took {total_time_part1:.1f} seconds)")
-
-# Part 2
-
-initial_map = cave_map.copy()
-cave_map_p2 = initial_map.copy()
-
-for row in range(1, 5):
-    new_values = (initial_map + row - 1) % 9 + 1
-    cave_map_p2 = np.append(cave_map_p2, new_values, axis=0)
-
-initial_map = cave_map_p2.copy()
-for column in range(1, 5):
-    new_values = (initial_map + column - 1) % 9 + 1
-    cave_map_p2 = np.append(cave_map_p2, new_values, axis=1)
-
-start_time_part2 = perf_counter()
-goal_y, goal_x = cave_map_p2.shape
-risk_part2 = path_find(cave_map_p2, Node(0,0), Node(goal_x-1, goal_y-1))
-total_time_part2 = perf_counter() - start_time_part2
-
-print(f"Part 2: {risk_part2} (took {total_time_part2:.1f} seconds)")
-
-print(f"{total_time_part2 / total_time_part1}")
