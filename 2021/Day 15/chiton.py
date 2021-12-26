@@ -1,23 +1,51 @@
-import numpy as np
+from __future__ import annotations
+from collections import namedtuple
+from heapq import heappop, heappush
 
-with open("input.txt", "rt") as file:
-    risk_map = []
-    for line in file: risk_map.append([int(char) for char in line.rstrip()])
-    risk_map = np.array(risk_map, dtype="uint32")
+Node = namedtuple("Node", "x y")
+Path = namedtuple("Path", "risk node")
 
-width, height = risk_map.shape
+with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 15\input.txt", "rt") as file:
+    cave_map = []
+    for line in file: cave_map.append([int(char) for char in line.rstrip()])
 
-distance_map = np.fromfunction(
-    function=(lambda y,x: width + height - 2 - x - y),
-    shape=risk_map.shape,
-    dtype=risk_map.dtype
-)
+max_y = len(cave_map) - 1
+max_x = len(cave_map[0]) - 1
 
-cave_map = risk_map + distance_map
+def path_find(cave_map:list[list[int]], start:Node, goal:Node) -> int:
 
-def path_find(cave_map:np.ndarray):
-    end_y, end_x = cave_map.shape
-    cave_map = np.pad(cave_map, pad_width=1, mode="constant", constant_values=10)
-    x = 0
-    y = 0
-    score = risk_map[y, x]
+    # Risk of the starting position
+    start_risk = cave_map[start.y][start.x]
+    
+    # Nodes that are known but weren't visited yet, and their minimum risk to get there
+    not_visited:list[Path] = [Path(start_risk, start)]
+    
+    # Nodes that were already visited
+    visited:list[Node] = []
+
+    while not_visited:
+        
+        # Get the known unvisited node with the least risk
+        risk, node = heappop(not_visited)
+
+        # Stop if we have arrived at the goal
+        if node == goal: return risk
+
+        # Do not go to the node if we have already visited it
+        if node in visited: continue
+
+        # Coordinates of the node
+        x, y = node
+
+        # Movement choices from the current position
+        choices = (x+1, y), (x-1, y), (x, y+1), (x, y-1)
+        
+        for next_x, next_y in choices:
+
+            # The destination must be within the map boundaries
+            if (0 <= next_x <= max_x) and (0 <= next_y <= max_y):
+                
+                # Calculate the risk to the next node
+                next_risk = risk + cave_map[next_y][next_x]
+                next_node = Node(next_x, next_y)
+                heappush(Path(next_risk, next_node))
