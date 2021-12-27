@@ -1,4 +1,4 @@
-# Solution - Advent of Code 2021, Day 15 (using `A*` and `Dijkstra’s` algorithm)
+# Solution - Advent of Code 2021, Day 15 (using `A*` and `Dijkstra’s` algorithms)
 
 This puzzle took me long because it was my first time with pathfinding algorithms, and I needed to learn the basics and also figure out how to implement. I am going to explain how it works, maybe this can help others in future who stumble upon this puzzle.
 
