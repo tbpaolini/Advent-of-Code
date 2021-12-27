@@ -38,6 +38,8 @@ def pathfind_dijkstra(cave_map:np.ndarray, start:Node, goal:Node) -> int:
     x_max -= 1
     y_max -= 1
 
+    step = 0
+
     # Loop through the map until all positions are visited
     while not np.all(visited):
         
@@ -60,15 +62,15 @@ def pathfind_dijkstra(cave_map:np.ndarray, start:Node, goal:Node) -> int:
                 
                 # Store the visit in the heap queue
                 if visited[node.y, node.x]: continue
-                visit = (distance[node.y, node.x], Node(node.x, node.y))
+                visit = (distance[node.y, node.x], Node(node.x, node.y), step+1)
                 heappush(to_visit, visit)
         
         # Mark the current node as visited
         visited[y, x] = True
-        print(np.count_nonzero(visited), end="\r")
+        print(np.count_nonzero(visited), step, end="\r")
 
         # Get the next node to visit
-        next_distance, next_node = heappop(to_visit)
+        next_distance, next_node, step = heappop(to_visit)
         x, y = next_node
     
     # After all nodes have been visited, the optimal distance is the one stored on the goal position
