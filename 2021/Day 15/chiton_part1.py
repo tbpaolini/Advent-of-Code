@@ -63,7 +63,7 @@ def pathfind_A_star(cave_map:np.ndarray, start:Node, goal:Node) -> int:
 
 start_time_part1 = perf_counter()
 goal_y, goal_x = cave_map.shape
-risk_part1 = path_find(cave_map, Node(0,0), Node(goal_x-1, goal_y-1))
+risk_part1 = pathfind_A_star(cave_map, Node(0,0), Node(goal_x-1, goal_y-1))
 total_time_part1 = perf_counter() - start_time_part1
 
 print(f"Part 1: {risk_part1} (took {total_time_part1:.1f} seconds)")

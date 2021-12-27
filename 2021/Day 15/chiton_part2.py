@@ -6,7 +6,7 @@ import numpy as np
 
 Node = namedtuple("Node", "x y")
 
-with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 15\input.txt", "rt") as file:
+with open("input.txt", "rt") as file:
     cave_map = []
     for line in file: cave_map.append([int(char) for char in line.rstrip()])
     cave_map = np.array(cave_map)
