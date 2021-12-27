@@ -1,0 +1,2 @@
+Part 1: 415 (took 7.1 seconds)
+Part 2: 2864 (took 8285.1 seconds)
