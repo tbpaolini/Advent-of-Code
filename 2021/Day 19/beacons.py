@@ -1,9 +1,9 @@
 from __future__ import annotations
 from re import I
-from typing import overload
 import numpy as np
 from math import radians, sin, cos
 from itertools import combinations, permutations
+from dataclasses import dataclass
 
 # 3D Rotation matrices
 def Rx(deg:int) -> np.ndarray:
@@ -93,21 +93,52 @@ for i in range(len(orientation)):
     orientation[i] = np.round(orientation[i]).astype("int64")
 
 # Parse the input
-scanner:dict[int, list[np.ndarray]] = {}
+
+class ScannerData():
+    """Hold the coordinates of the beacons seen by the scanner, as well the
+    rotation and offset of the scanner in relation to a reference point."""
+
+    def __init__(
+        self,
+        beacon: list[np.ndarray[1,3]] = None,   # A list of column matrices of (x,y,x) coordinates
+        rotation: int = 4,                      # The index of the transformation matrix on the 'oriantation' list
+        offset: np.ndarray[1,3] = None          # A column matrix of the (x,y,z) coordinate in relation to a reference point
+    ) -> None:
+        pass
+    
+        self.beacon = [] if (beacon is None) else beacon
+        self.rotation = rotation
+        self.offset = np.array([[0], [0], [0]], dtype="int64") if (offset is None) else offset
+    
+    def __repr__(self) -> str:
+        return f"---Scanner---\nbeacons: {len(self.beacon)}\noffset:\n{self.offset}\nrotation matrix:\n{orientation[self.rotation]}\n"
+    
+    def get_coordinate(self, beacon_id:int) -> np.ndarray[1,3]:
+        """Get the coordinate of a beacon corrected with the offset and the rotation."""
+        return orientation[self.rotation] @ (self.beacon[beacon_id] + self.offset)
+
+# Dictionary to hold each scanner and their respective data
+scanner:dict[int, ScannerData] = {}
+
+# Read the file
 with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 19\input.txt", "rt") as file:
     raw_scanners = file.read().split("\n\n")
 
+# Store the scanner file data from the file
 for scan in raw_scanners:
     lines = scan.strip().split("\n")
     scanner_id = int(lines[0].split()[2])   # Number of the scanner
-    scanner[scanner_id] = []                # List to store the beacons' coordinates
+    scanner[scanner_id] = ScannerData()     # Structure to store the beacons' coordinates
     
     for line in lines[1:]:
         # Store the (x, y, z) coordinates as a column matrix
         x, y, z = line.split(",")
-        scanner[scanner_id].append(
+        scanner[scanner_id].beacon.append(
             np.array(
                 [[int(x)], [int(y)], [int(z)]],
                 dtype="int64"
             )
         )
+
+# Part 1
+
