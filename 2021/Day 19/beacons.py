@@ -1,6 +1,9 @@
 from __future__ import annotations
+from re import I
+from typing import overload
 import numpy as np
 from math import radians, sin, cos
+from itertools import combinations, permutations
 
 # 3D Rotation matrices
 def Rx(deg:int) -> np.ndarray:
@@ -47,34 +50,42 @@ def Rz(deg:int) -> np.ndarray:
 # Angles to rotate
 angle = (0, 90, 180, 270)
 
-# Rotations along all 3 axes
+# Functions to perform rotations along all 3 axes
 rotation = {
     "x": Rx,
     "y": Ry,
     "z": Rz,
 }
 
-# Inversion of the direction that a axis is facing
-invert = {
-    "x": Rz(180),
-    "y": Rx(180),
-    "z": Ry(180)
+# How to get each of the 6 faces to be facing up (↑)
+"""Assuming this starting orientation:
+  +y 
+   |__+x
+  /
++z
+"""
+face = {
+    "+x": Rz(-90),  # 90° counterclockwise around the z-axis
+    "+y": Ry(0),    # Identity operation
+    "+z": Rx(90),   # 90° clockwise around the x-axis
+    "-x": Rz(90),   # 90° clockwise around the z-axis
+    "-y": Rx(180),  # 180° around the x-axis (around the y-axis would also achieve the same result) 
+    "-z": Rx(-90)   # 90° clockwise around the x-axis
 }
 
 # Get the matrices for all 24 possible orientations of a cube in a 3D space
-orientation:list[np.ndarray] = []
+orientation:list[np.ndarray[3,3]] = []
 
-# Loop through the 4 angles
-for deg in angle:
+# Loop through all 6 faces
+for axis, starting_position in face.items():
+    
+    # Get the function to rotate around the face's axis
+    axis_rotation = rotation[axis[1]]
 
-    # Loop through the 3 axes
-    for axis, rot in rotation.items():
-        
-        # Rotate the axis by all 4 angles
-        orientation.append(rot(deg))
-
-        # Invert the axis then rotate by all 4 angles
-        orientation.append(rot(deg) @ invert[axis])  # The '@' operator does matrix multiplication
+    # Rotate each face by all 4 possible angles
+    for deg in angle:
+        # The '@' operator does matrix multiplication
+        orientation.append(axis_rotation(deg) @ starting_position)
 
 # Convert the matrices' elements to integers
 # (because in our case all elements can only be either -1, 0, 1)
