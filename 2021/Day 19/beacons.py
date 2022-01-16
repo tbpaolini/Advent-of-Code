@@ -1,4 +1,5 @@
 from __future__ import annotations
+from itertools import product
 from re import I
 import numpy as np
 from math import radians, sin, cos
@@ -121,9 +122,21 @@ class ScannerData():
         if fingerprint in self.cache:
             return self.cache[fingerprint]
         else:
-            coord = orientation[self.rotation] @ (self.beacon[beacon_id] + self.offset) 
+            coord = (orientation[self.rotation] @ self.beacon[beacon_id]) + self.offset
             self.cache[fingerprint] = coord
             return coord
+    
+    def get_all_coordinates(self) -> list[np.ndarray[1,3]]:
+        """Get the list of the coordinates of all beacons corrected with the offset and the rotation."""
+        
+        fingerprint = (id(orientation[self.rotation]), id(self.offset))
+
+        if fingerprint in self.cache:
+            return self.cache[fingerprint]
+        else:
+            coords = [self.get_coordinate(i) for i in range(len(self.beacon))]
+            self.cache[fingerprint] = coords
+            return coords
 
 # Dictionary to hold each scanner and their respective data
 scanner:dict[int, ScannerData] = {}
@@ -150,3 +163,43 @@ for scan in raw_scanners:
 
 # Part 1
 
+reference = scanner[0]
+aligned_scanners:list[int] = []
+
+while len(aligned_scanners) < len(scanner):
+    
+    for ID, scan in scanner.items():
+
+        if id(scan) == id(reference): continue
+        if ID in aligned_scanners: continue
+        found_alignment = False
+
+        # Try all 24 orientations
+        for rotation in range(len(orientation)):
+            scan.rotation = rotation
+
+            # Try to align each pair of beacons between both scanners
+            for beacon_ref, beacon_new in product(reference.beacon, scan.beacon):
+                scan.offset = beacon_ref - (orientation[rotation] @ beacon_new)
+
+                ref_coordinates = reference.get_all_coordinates()
+                new_coordinates = scan.get_all_coordinates()
+                aligned_beacons = 0
+
+                for new_coord in new_coordinates:
+                    
+                    if new_coord in ref_coordinates:
+                        aligned_beacons += 1
+                        assert aligned_beacons < 2
+                
+                    if aligned_beacons >= 12:
+                        aligned_scanners.append(ID)
+                        reference = scan
+                        found_alignment = True
+                        break
+                
+                if found_alignment: break
+            
+            if found_alignment: break
+        
+        if found_alignment: break
