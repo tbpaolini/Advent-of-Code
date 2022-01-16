@@ -2,8 +2,6 @@ from __future__ import annotations
 from re import I
 import numpy as np
 from math import radians, sin, cos
-from itertools import combinations, permutations
-from dataclasses import dataclass
 
 # 3D Rotation matrices
 def Rx(deg:int) -> np.ndarray:
@@ -109,13 +107,23 @@ class ScannerData():
         self.beacon = [] if (beacon is None) else beacon
         self.rotation = rotation
         self.offset = np.array([[0], [0], [0]], dtype="int64") if (offset is None) else offset
+
+        self.cache = {}
     
     def __repr__(self) -> str:
         return f"---Scanner---\nbeacons: {len(self.beacon)}\noffset:\n{self.offset}\nrotation matrix:\n{orientation[self.rotation]}\n"
     
     def get_coordinate(self, beacon_id:int) -> np.ndarray[1,3]:
         """Get the coordinate of a beacon corrected with the offset and the rotation."""
-        return orientation[self.rotation] @ (self.beacon[beacon_id] + self.offset)
+        
+        fingerprint = (beacon_id, id(orientation[self.rotation]), id(self.offset))
+        
+        if fingerprint in self.cache:
+            return self.cache[fingerprint]
+        else:
+            coord = orientation[self.rotation] @ (self.beacon[beacon_id] + self.offset) 
+            self.cache[fingerprint] = coord
+            return coord
 
 # Dictionary to hold each scanner and their respective data
 scanner:dict[int, ScannerData] = {}
