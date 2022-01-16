@@ -69,7 +69,7 @@ face = {
     "+y": Ry(0),    # Identity operation
     "+z": Rx(90),   # 90° clockwise around the x-axis
     "-x": Rz(90),   # 90° clockwise around the z-axis
-    "-y": Rx(180),  # 180° around the x-axis (around the y-axis would also achieve the same result) 
+    "-y": Rx(180),  # 180° around the x-axis (around the z-axis would also achieve the same result) 
     "-z": Rx(-90)   # 90° clockwise around the x-axis
 }
 
