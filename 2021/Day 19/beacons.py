@@ -202,7 +202,7 @@ def align_scanner(target_scanner:ScannerData, reference_scanner:ScannerData) -> 
             for count, tgt_coord in enumerate(target_coordinates):
                 
                 # If there is not enough beacons left to meet the 12 aligned beacons requirement
-                if total_beacons - count < 12: break
+                if (total_beacons - count) < (12 - aligned_beacons): break
                 
                 # Check if the current beacon has the same coordinate as a beacon on the reference
                 if any(np.array_equal(tgt_coord, ref_coord) for ref_coord in reference_coordinates):
