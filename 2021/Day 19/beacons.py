@@ -1,7 +1,6 @@
 from __future__ import annotations
-from itertools import combinations, product
+from itertools import product
 import numpy as np
-from typing import Any
 from math import radians, sin, cos
 
 # 3D Rotation matrices
@@ -185,3 +184,37 @@ for scan in raw_scanners:
 
 # Part 1
 
+def align_scanner(target_scanner:ScannerData, reference_scanner:ScannerData) -> bool:
+    
+    # Loop through all 24 possible scanner orientations
+    for rotation in range(24):
+        target_scanner.rotation = rotation
+        
+        # Try to align each beacon on the target with each beacon on the reference
+        for target_beacon, reference_beacon in product(target_scanner, reference_scanner):
+            target_scanner.offset = reference_beacon - target_beacon
+            target_coordinates = target_scanner.get_all_coordinates()
+            reference_coordinates = reference_scanner.get_all_coordinates()
+
+            # Check which beacons overlap between target and reference
+            aligned_beacons = 0
+            total_beacons = len(target_coordinates)
+            for count, tgt_coord in enumerate(target_coordinates):
+                
+                # If there is not enough beacons left to meet the 12 aligned beacons requirement
+                if total_beacons - count < 12: break
+                
+                # Check if the current beacon has the same coordinate as a beacon on the reference
+                if any(np.array_equal(tgt_coord, ref_coord) for ref_coord in reference_coordinates):
+                    aligned_beacons += 1
+                
+                # If at least 12 beacons have been aligned
+                if aligned_beacons >= 12: return True
+            
+            # Clear the coordinates cache, as the wrong results will not be necessary
+            target_scanner.cache.clear()
+    
+    # When the scanners have not enough beacons in common
+    return False
+
+align_scanner(scanners[1], scanners[0])
