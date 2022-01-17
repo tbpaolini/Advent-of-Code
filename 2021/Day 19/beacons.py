@@ -1,5 +1,5 @@
 from __future__ import annotations
-from itertools import product
+from itertools import combinations, product
 import numpy as np
 from typing import Any
 from math import radians, sin, cos
@@ -108,6 +108,10 @@ class ScannerData():
         # A column matrix of the (x,y,z) coordinate in relation to a reference point
         self.offset: np.ndarray = np.array([[0], [0], [0]], dtype="int64")
 
+        # Which other scanners the current one is seeing
+        self.next: ScannerData = None       # Next scanner
+        self.previous: ScannerData = None   # Previous scanner
+
         self.cache = {}
     
     def __repr__(self) -> str:
@@ -122,7 +126,7 @@ class ScannerData():
     def get_coordinate(self, beacon_id:int) -> np.ndarray[np.uint64]:
         """Get the coordinate of a beacon corrected with the offset and the rotation."""
         
-        fingerprint = (beacon_id, id(orientation[self.rotation]), id(self.offset))
+        fingerprint = (id(self.beacon[beacon_id]), id(orientation[self.rotation]), id(self.offset))
         
         if fingerprint in self.cache:
             return self.cache[fingerprint]
@@ -155,12 +159,12 @@ class ScannerData():
         result = self[self.__index]
         self.__index += 1
         return result
-
+    
 # Dictionary to hold each scanner and their respective data
 scanners:dict[int, ScannerData] = {}
 
 # Read the file
-with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 19\input.txt", "rt") as file:
+with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 19\test_input.txt", "rt") as file:
     raw_scanners = file.read().split("\n\n")
 
 # Store the scanner file data from the file
@@ -181,4 +185,3 @@ for scan in raw_scanners:
 
 # Part 1
 
-x: np.ndarray = 0
