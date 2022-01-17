@@ -1,7 +1,7 @@
 from __future__ import annotations
 from itertools import product
-from re import I
 import numpy as np
+from typing import Any
 from math import radians, sin, cos
 
 # 3D Rotation matrices
@@ -97,24 +97,29 @@ class ScannerData():
     """Hold the coordinates of the beacons seen by the scanner, as well the
     rotation and offset of the scanner in relation to a reference point."""
 
-    def __init__(
-        self,
-        beacon: list[np.ndarray[1,3]] = None,   # A list of column matrices of (x,y,x) coordinates
-        rotation: int = 4,                      # The index of the transformation matrix on the 'oriantation' list
-        offset: np.ndarray[1,3] = None          # A column matrix of the (x,y,z) coordinate in relation to a reference point
-    ) -> None:
-        pass
+    def __init__(self) -> None:
     
-        self.beacon = [] if (beacon is None) else beacon
-        self.rotation = rotation
-        self.offset = np.array([[0], [0], [0]], dtype="int64") if (offset is None) else offset
+        # A list of column matrices of (x,y,x) coordinates in different orientations
+        self.beacon: list[list[np.ndarray]] = []
+
+        # The index of the transformation matrix on the 'oriantation' list
+        self.rotation = 4
+
+        # A column matrix of the (x,y,z) coordinate in relation to a reference point
+        self.offset: np.ndarray = np.array([[0], [0], [0]], dtype="int64")
 
         self.cache = {}
     
     def __repr__(self) -> str:
         return f"---Scanner---\nbeacons: {len(self.beacon)}\noffset:\n{self.offset}\nrotation matrix:\n{orientation[self.rotation]}\n"
     
-    def get_coordinate(self, beacon_id:int) -> np.ndarray[1,3]:
+    def add_beacon(self, coordinate:np.ndarray) -> None:
+        beacon_rotations = []
+        for rotation_matrix in orientation:
+            beacon_rotations.append(rotation_matrix @ coordinate)
+        self.beacon.append(beacon_rotations)
+    
+    def get_coordinate(self, beacon_id:int) -> np.ndarray[np.uint64]:
         """Get the coordinate of a beacon corrected with the offset and the rotation."""
         
         fingerprint = (beacon_id, id(orientation[self.rotation]), id(self.offset))
@@ -122,11 +127,11 @@ class ScannerData():
         if fingerprint in self.cache:
             return self.cache[fingerprint]
         else:
-            coord = (orientation[self.rotation] @ self.beacon[beacon_id]) + self.offset
+            coord = self.beacon[beacon_id][self.rotation] + self.offset
             self.cache[fingerprint] = coord
             return coord
     
-    def get_all_coordinates(self) -> list[np.ndarray[1,3]]:
+    def get_all_coordinates(self) -> list[np.ndarray]:
         """Get the list of the coordinates of all beacons corrected with the offset and the rotation."""
         
         fingerprint = (id(orientation[self.rotation]), id(self.offset))
@@ -137,9 +142,22 @@ class ScannerData():
             coords = [self.get_coordinate(i) for i in range(len(self.beacon))]
             self.cache[fingerprint] = coords
             return coords
+    
+    def __getitem__(self, index:int) -> np.ndarray:
+        return self.get_coordinate(index)
+    
+    def __iter__(self):
+        self.__index = 0
+        return self
+    
+    def __next__(self):
+        if self.__index >= len(self.beacon): raise StopIteration
+        result = self[self.__index]
+        self.__index += 1
+        return result
 
 # Dictionary to hold each scanner and their respective data
-scanner:dict[int, ScannerData] = {}
+scanners:dict[int, ScannerData] = {}
 
 # Read the file
 with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 19\input.txt", "rt") as file:
@@ -149,12 +167,12 @@ with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\20
 for scan in raw_scanners:
     lines = scan.strip().split("\n")
     scanner_id = int(lines[0].split()[2])   # Number of the scanner
-    scanner[scanner_id] = ScannerData()     # Structure to store the beacons' coordinates
+    scanners[scanner_id] = ScannerData()     # Structure to store the beacons' coordinates
     
     for line in lines[1:]:
         # Store the (x, y, z) coordinates as a column matrix
         x, y, z = line.split(",")
-        scanner[scanner_id].beacon.append(
+        scanners[scanner_id].add_beacon(
             np.array(
                 [[int(x)], [int(y)], [int(z)]],
                 dtype="int64"
@@ -163,43 +181,4 @@ for scan in raw_scanners:
 
 # Part 1
 
-reference = scanner[0]
-aligned_scanners:list[int] = []
-
-while len(aligned_scanners) < len(scanner):
-    
-    for ID, scan in scanner.items():
-
-        if id(scan) == id(reference): continue
-        if ID in aligned_scanners: continue
-        found_alignment = False
-
-        # Try all 24 orientations
-        for rotation in range(len(orientation)):
-            scan.rotation = rotation
-
-            # Try to align each pair of beacons between both scanners
-            for beacon_ref, beacon_new in product(reference.beacon, scan.beacon):
-                scan.offset = beacon_ref - (orientation[rotation] @ beacon_new)
-
-                ref_coordinates = reference.get_all_coordinates()
-                new_coordinates = scan.get_all_coordinates()
-                aligned_beacons = 0
-
-                for new_coord in new_coordinates:
-                    
-                    if new_coord in ref_coordinates:
-                        aligned_beacons += 1
-                        assert aligned_beacons < 2
-                
-                    if aligned_beacons >= 12:
-                        aligned_scanners.append(ID)
-                        reference = scan
-                        found_alignment = True
-                        break
-                
-                if found_alignment: break
-            
-            if found_alignment: break
-        
-        if found_alignment: break
+x: np.ndarray = 0
