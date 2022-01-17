@@ -27,7 +27,7 @@ def Ry(deg:int) -> np.ndarray:
         [
             [ cos(rad), 0, sin(rad)],
             [        0, 1,        0],
-            [-sin(deg), 0, cos(rad)]
+            [-sin(rad), 0, cos(rad)]
         ]
     )
 
