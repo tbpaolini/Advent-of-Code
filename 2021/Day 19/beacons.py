@@ -122,32 +122,38 @@ class ScannerData():
             beacon_rotations.append(rotation_matrix @ coordinate)
         self.beacon.append(beacon_rotations)
     
-    def get_coordinate(self, beacon_id:int) -> np.ndarray[np.uint64]:
+    def get_coordinate(self, beacon_id:int) -> tuple[int]:
         """Get the coordinate of a beacon corrected with the offset and the rotation."""
         
-        fingerprint = (id(self.beacon[beacon_id]), id(orientation[self.rotation]), id(self.offset))
+        fingerprint = hash(("tuple", id(self.beacon[beacon_id]), id(orientation[self.rotation]), id(self.offset)))
         
         if fingerprint in self.cache:
             return self.cache[fingerprint]
         else:
-            coord = self.beacon[beacon_id][self.rotation] + self.offset
+            coord = tuple(self[beacon_id].ravel())
             self.cache[fingerprint] = coord
             return coord
     
-    def get_all_coordinates(self) -> list[np.ndarray]:
+    def get_all_coordinates(self) -> set[tuple[int]]:
         """Get the list of the coordinates of all beacons corrected with the offset and the rotation."""
         
-        fingerprint = (id(orientation[self.rotation]), id(self.offset))
+        fingerprint = ("set", id(orientation[self.rotation]), id(self.offset))
 
         if fingerprint in self.cache:
             return self.cache[fingerprint]
         else:
-            coords = [self.get_coordinate(i) for i in range(len(self.beacon))]
+            coords = {self.get_coordinate(i) for i in range(len(self.beacon))}
             self.cache[fingerprint] = coords
             return coords
     
     def __getitem__(self, index:int) -> np.ndarray:
-        return self.get_coordinate(index)
+        fingerprint = hash(("array", id(self.beacon[index]), id(orientation[self.rotation]), id(self.offset)))
+        if fingerprint in self.cache:
+            return self.cache[fingerprint]
+        else:
+            item = self.beacon[index][self.rotation] + self.offset 
+            self.cache[fingerprint] = item
+            return item
     
     def __iter__(self):
         self.__index = 0
@@ -185,36 +191,30 @@ for scan in raw_scanners:
 # Part 1
 
 def align_scanner(target_scanner:ScannerData, reference_scanner:ScannerData) -> bool:
+
+    old_rotation = target_scanner.rotation
     
     # Loop through all 24 possible scanner orientations
     for rotation in range(24):
         target_scanner.rotation = rotation
         
         # Try to align each beacon on the target with each beacon on the reference
+        old_offset = target_scanner.offset.copy()
         for target_beacon, reference_beacon in product(target_scanner, reference_scanner):
             target_scanner.offset = reference_beacon - target_beacon
             target_coordinates = target_scanner.get_all_coordinates()
             reference_coordinates = reference_scanner.get_all_coordinates()
 
-            # Check which beacons overlap between target and reference
-            aligned_beacons = 0
-            total_beacons = len(target_coordinates)
-            for count, tgt_coord in enumerate(target_coordinates):
-                
-                # If there is not enough beacons left to meet the 12 aligned beacons requirement
-                if (total_beacons - count) < (12 - aligned_beacons): break
-                
-                # Check if the current beacon has the same coordinate as a beacon on the reference
-                if any(np.array_equal(tgt_coord, ref_coord) for ref_coord in reference_coordinates):
-                    aligned_beacons += 1
-                
-                # If at least 12 beacons have been aligned
-                if aligned_beacons >= 12: return True
+            # Check if at least 12 beacons overlap between target and reference
+            overlap = target_coordinates & reference_coordinates
+            if len(overlap) >= 12: return True
             
             # Clear the coordinates cache, as the wrong results will not be necessary
             target_scanner.cache.clear()
+            target_scanner.offset[:] = old_offset[:]
     
     # When the scanners have not enough beacons in common
+    target_scanner.rotation = old_rotation
     return False
 
-align_scanner(scanners[1], scanners[0])
+print(align_scanner(scanners[1], scanners[0]))
