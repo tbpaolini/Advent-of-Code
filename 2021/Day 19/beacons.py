@@ -1,5 +1,5 @@
 from __future__ import annotations
-from itertools import product
+from itertools import product, combinations
 import numpy as np
 from math import radians, sin, cos
 
@@ -96,7 +96,12 @@ class ScannerData():
     """Hold the coordinates of the beacons seen by the scanner, as well the
     rotation and offset of the scanner in relation to a reference point."""
 
+    scanners_set = set()
+
     def __init__(self) -> None:
+
+        self.__count = len(self.scanners_set)   # Order in which the instance was created
+        self.scanners_set.add(self)             # Keep track of all created instances of this class
     
         # A list of column matrices of (x,y,x) coordinates in different orientations
         self.beacon: list[list[np.ndarray]] = []
@@ -108,13 +113,16 @@ class ScannerData():
         self.offset: np.ndarray = np.array([[0], [0], [0]], dtype="int64")
 
         # Which other scanners the current one is seeing
-        self.next: ScannerData = None       # Next scanner
-        self.previous: ScannerData = None   # Previous scanner
+        self.nodes: dict[ScannerData: np.ndarray] = {}
 
+        # Cache for the results of the methods
         self.cache = {}
     
     def __repr__(self) -> str:
-        return f"---Scanner---\nbeacons: {len(self.beacon)}\noffset:\n{self.offset}\nrotation matrix:\n{orientation[self.rotation]}\n"
+        return f"Scanner {self.__count}"
+    
+    def __str__(self) -> str:
+        return f"---Scanner {self.__count}---\nbeacons: {len(self.beacon)}\noffset:\n{self.offset}\nrotation matrix:\n{orientation[self.rotation]}\n"
     
     def add_beacon(self, coordinate:np.ndarray) -> None:
         beacon_rotations = []
@@ -146,6 +154,11 @@ class ScannerData():
             self.cache[fingerprint] = coords
             return coords
     
+    def reset(self):
+        """Returns the scanner to its original rotation and offset"""
+        self.rotation = 4
+        self.offset = np.array([[0], [0], [0]], dtype="int64")
+    
     def __getitem__(self, index:int) -> np.ndarray:
         fingerprint = hash(("array", id(self.beacon[index]), id(orientation[self.rotation]), id(self.offset)))
         if fingerprint in self.cache:
@@ -164,6 +177,9 @@ class ScannerData():
         result = self[self.__index]
         self.__index += 1
         return result
+    
+    def __hash__(self) -> int:
+        return id(self)    # We need the object to be have a hash value so we can use it as a dictionary key
     
 # Dictionary to hold each scanner and their respective data
 scanners:dict[int, ScannerData] = {}
@@ -217,4 +233,15 @@ def align_scanner(target_scanner:ScannerData, reference_scanner:ScannerData) -> 
     target_scanner.rotation = old_rotation
     return False
 
-print(align_scanner(scanners[1], scanners[0]))
+max_steps = len(scanners) * (len(scanners) - 1) / 2
+step = 0
+for target, reference in combinations(scanners.values(), 2):
+    print(f"Progress: {step * 100 / max_steps:.2f}%", end="\r")
+    
+    if align_scanner(target, reference):
+        reference.nodes[target] = (target.offset , target.rotation)
+        target.nodes[reference] = (-target.offset, target.rotation)
+    target.reset()
+
+    step += 1
+print("Progress: 100%  ")
