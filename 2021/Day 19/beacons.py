@@ -1,7 +1,11 @@
 from __future__ import annotations
-from itertools import product, combinations
+from itertools import permutations, product
 import numpy as np
 from math import radians, sin, cos
+import pickle
+from pathlib import Path
+
+scanners_file_path:Path = Path(__file__).parent / "scanners.pickle"
 
 # 3D Rotation matrices
 def Rx(deg:int) -> np.ndarray:
@@ -185,24 +189,31 @@ class ScannerData():
 scanners:dict[int, ScannerData] = {}
 
 # Read the file
-with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 19\test_input.txt", "rt") as file:
-    raw_scanners = file.read().split("\n\n")
+if scanners_file_path.exists():
+    # Load the file with the scanners alignments ('scanners.pickle'), if it exists
+    with open(scanners_file_path, "rb") as scanners_file:
+        scanners = pickle.load(scanners_file)
 
-# Store the scanner file data from the file
-for scan in raw_scanners:
-    lines = scan.strip().split("\n")
-    scanner_id = int(lines[0].split()[2])   # Number of the scanner
-    scanners[scanner_id] = ScannerData()     # Structure to store the beacons' coordinates
-    
-    for line in lines[1:]:
-        # Store the (x, y, z) coordinates as a column matrix
-        x, y, z = line.split(",")
-        scanners[scanner_id].add_beacon(
-            np.array(
-                [[int(x)], [int(y)], [int(z)]],
-                dtype="int64"
+else:
+    # Rebuild the scanners dictionary from scratch if there is no  'scanners.pickle' file
+    with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 19\test_input.txt", "rt") as file:
+        raw_scanners = file.read().split("\n\n")
+
+    # Store the scanner file data from the file
+    for scan in raw_scanners:
+        lines = scan.strip().split("\n")
+        scanner_id = int(lines[0].split()[2])   # Number of the scanner
+        scanners[scanner_id] = ScannerData()    # Structure to store the beacons' coordinates
+        
+        for line in lines[1:]:
+            # Store the (x, y, z) coordinates as a column matrix
+            x, y, z = line.split(",")
+            scanners[scanner_id].add_beacon(
+                np.array(
+                    [[int(x)], [int(y)], [int(z)]],
+                    dtype="int64"
+                )
             )
-        )
 
 # Part 1
 
@@ -233,14 +244,17 @@ def align_scanner(target_scanner:ScannerData, reference_scanner:ScannerData) -> 
     target_scanner.rotation = old_rotation
     return False
 
-max_steps = len(scanners) * (len(scanners) - 1) / 2
+max_steps = len(scanners) * (len(scanners) - 1)
 step = 0
-for target, reference in combinations(scanners.values(), 2):
+print("Building map of scanners...")
+for target, reference in permutations(scanners.values(), 2):
     print(f"Progress: {step * 100 / max_steps:.2f}%", end="\r")
     
     if align_scanner(target, reference):
         reference.nodes[target] = (target.offset , target.rotation)
-        target.nodes[reference] = (-target.offset, target.rotation)
+        with open(scanners_file_path, "wb") as scanners_file:
+            pickle.dump(scanners, scanners_file)
+    
     target.reset()
 
     step += 1
