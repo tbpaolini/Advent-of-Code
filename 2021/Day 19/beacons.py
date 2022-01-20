@@ -295,4 +295,6 @@ for target, reference in permutations(scanners.values(), 2):
         with open(scanners_file_path, "wb") as scanners_file:
             pickle.dump(scanners, scanners_file)
 
+with open(scanners_file_path, "wb") as scanners_file:
+    pickle.dump(scanners, scanners_file)
 print("Progress: 100%  ")
