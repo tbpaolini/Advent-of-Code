@@ -4,6 +4,7 @@ import numpy as np
 from math import radians, sin, cos
 import pickle
 from pathlib import Path
+from uuid import uuid4
 
 scanners_file_path:Path = Path(__file__).parent / "scanners.pickle"
 
@@ -102,6 +103,22 @@ class ScannerData():
 
     scanners_set = set()
 
+    def __new__(cls:type, uuid:int = None) -> ScannerData:
+        
+        # Create the instance
+        self = super().__new__(cls)
+        
+        # Create an unique ID for the instance
+        if uuid is None:
+            self.uuid = uuid4().int
+        else:
+            self.uuid = uuid
+        
+        return self
+        # Note: The UUID will be used as the hash value and for keeping track of which other scanners have been checked to be near.
+        #       We have created it here because the .__hash__() method would yield an error if we tried to set the .uuid property
+        #       during the .__init__() method.
+
     def __init__(self) -> None:
 
         self.__count = len(self.scanners_set)   # Order in which the instance was created
@@ -118,9 +135,19 @@ class ScannerData():
 
         # Which other scanners the current one is seeing
         self.nodes: dict[ScannerData: np.ndarray] = {}
+        
+        # Store the UUID of the scanners checked if they are being seen by the current one
+        self.nodes_tried: set = set()
 
         # Cache for the results of the methods
         self.cache = {}
+    
+    def __getnewargs__(self) -> tuple:
+        """Arguments to pass to the .__new__() method when unpickling the object."""
+        return (self.uuid,)
+        # Note: We need the UUID value to be the same between different script executions,
+        #       because previously created instances can be loaded from a pickle file and
+        #       that value is used as the hash of the instance.
     
     def __repr__(self) -> str:
         return f"Scanner {self.__count}"
@@ -183,7 +210,7 @@ class ScannerData():
         return result
     
     def __hash__(self) -> int:
-        return id(self)    # We need the object to be have a hash value so we can use it as a dictionary key
+        return self.uuid    # We need the object to be have a hash value so we can use it as a dictionary key
     
 # Dictionary to hold each scanner and their respective data
 scanners:dict[int, ScannerData] = {}
@@ -196,7 +223,7 @@ if scanners_file_path.exists():
 
 else:
     # Rebuild the scanners dictionary from scratch if there is no  'scanners.pickle' file
-    with open(r"C:\Users\Tiago\OneDrive\Documentos\Python\Projetos\Advent of code\2021\Day 19\test_input.txt", "rt") as file:
+    with open("input.txt", "rt") as file:
         raw_scanners = file.read().split("\n\n")
 
     # Store the scanner file data from the file
@@ -249,13 +276,23 @@ step = 0
 print("Building map of scanners...")
 for target, reference in permutations(scanners.values(), 2):
     print(f"Progress: {step * 100 / max_steps:.2f}%", end="\r")
+    step += 1
     
-    if align_scanner(target, reference):
+    # Check if the target has already been checked against
+    # (useful when a unfinished results have been loaded from disk)
+    if target in reference.nodes_tried: continue
+    
+    # Attempt to align the pair
+    aligned = align_scanner(target, reference)
+    if aligned:
         reference.nodes[target] = (target.offset , target.rotation)
+    
+    reference.nodes_tried.add(target)   # Mark the pair as "tried"
+    target.reset()                      # Reset the position and orientation of the target
+    
+    # Backup to disk the partial result
+    if aligned:
         with open(scanners_file_path, "wb") as scanners_file:
             pickle.dump(scanners, scanners_file)
-    
-    target.reset()
 
-    step += 1
 print("Progress: 100%  ")
