@@ -1,3 +1,6 @@
+# This script gives the wrong answer, and it's here for archiving purposes.
+# 'bot2.py' is the script that gives the correct answer
+
 with open("input.txt") as file:
     raw_commands = [tuple(line.split()) for line in file.readlines()]
 
