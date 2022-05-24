@@ -5,6 +5,7 @@ from math import radians, sin, cos
 import pickle
 from pathlib import Path
 from uuid import uuid4
+from collections import deque
 
 scanners_file_path:Path = Path(__file__).parent / "scanners.pickle"
 
@@ -273,6 +274,7 @@ def align_scanner(target_scanner:ScannerData, reference_scanner:ScannerData) -> 
 
 max_steps = len(scanners) * (len(scanners) - 1)
 step = 0
+changed = False
 print("Building map of scanners...")
 for target, reference in permutations(scanners.values(), 2):
     print(f"Progress: {step * 100 / max_steps:.2f}%", end="\r")
@@ -292,9 +294,43 @@ for target, reference in permutations(scanners.values(), 2):
     
     # Backup to disk the partial result
     if aligned:
+        changed = True
         with open(scanners_file_path, "wb") as scanners_file:
             pickle.dump(scanners, scanners_file)
 
-with open(scanners_file_path, "wb") as scanners_file:
-    pickle.dump(scanners, scanners_file)
+if changed:
+    with open(scanners_file_path, "wb") as scanners_file:
+        pickle.dump(scanners, scanners_file)
 print("Progress: 100%  ")
+
+# Link all scanners
+
+def link_scanners(scanners:dict[int, ScannerData], start=0) -> None:
+    origin = scanners[start]
+    path: deque[tuple[ScannerData, ScannerData]] = deque()
+    unvisited_nodes: set[ScannerData] = set(scanners.values()) - {origin}
+    visited_nodes: set[ScannerData] = {origin}
+    closed_nodes: set[ScannerData] = set()
+
+    finished = False
+
+    to_visit: set[ScannerData] = set()
+    while unvisited_nodes:
+        
+        for current_node in visited_nodes:
+            
+            to_visit.clear()
+            for next_node in unvisited_nodes:
+                if next_node in closed_nodes: continue
+                if current_node in next_node.nodes:
+                    path.append((current_node, next_node))
+                    to_visit.add(next_node)
+            
+            closed_nodes.add(current_node)
+            
+        unvisited_nodes -= to_visit
+        visited_nodes |= to_visit
+        
+    return path
+
+x = link_scanners(scanners)
