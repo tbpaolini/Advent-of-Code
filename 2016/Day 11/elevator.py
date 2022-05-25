@@ -10,6 +10,8 @@ FAIL = -1
 SUCCESS = 0
 FINISHED = 1
 
+MAX_INT64 = (1 << 63) - 1
+
 floors:FloorMap = (
     {("promethium", "generator"), ("promethium", "microchip")},
     {("cobalt", "generator"), ("curium", "generator"), ("ruthenium", "generator"), ("plutonium", "generator")},
@@ -17,7 +19,7 @@ floors:FloorMap = (
     set()
 )
 
-@lru_cache
+# @lru_cache
 def place(item:RTG, source:int, destination:int, floors_state:FloorMap, validate:bool=False) -> tuple[bool,FloorMap]:
     
     floors_state = deepcopy(floors_state)
@@ -28,7 +30,7 @@ def place(item:RTG, source:int, destination:int, floors_state:FloorMap, validate
 
     if not validate: return (True, floors_state)
 
-    if type_ == "microship":
+    if type_ == "microchip":
         my_generator = (element, "generator")
         for dest_step in range(source, destination+1):
             if my_generator not in floors_state[dest_step]:
@@ -36,10 +38,10 @@ def place(item:RTG, source:int, destination:int, floors_state:FloorMap, validate
                     if floor_item[1] == "generator": return (False, floors_state)
     
     elif type_ == "generator":
-        my_microship = (element, "microship")
+        my_microchip = (element, "microchip")
         for dest_step in range(source, destination+1):
             for floor_item in floors_state[dest_step]:
-                if (floor_item[1] == "microchip") and (floor_item != my_microship):
+                if (floor_item[1] == "microchip") and (floor_item != my_microchip):
                     other_generator = (floor_item[0], "generator")
                     if other_generator not in floors_state[dest_step]:
                         return (False, floors_state)
@@ -49,7 +51,7 @@ def place(item:RTG, source:int, destination:int, floors_state:FloorMap, validate
     
     return (True, floors_state)
 
-@lru_cache
+# @lru_cache
 def move(slot_1:RTG, slot_2:RTG|None, source:int, destination:int, floors_state:FloorMap) -> int:
 
     floors_state = deepcopy(floors_state)
@@ -69,12 +71,21 @@ def move(slot_1:RTG, slot_2:RTG|None, source:int, destination:int, floors_state:
                 return (SUCCESS, floor_output)
         return (FINISHED, floor_output)
 
-def run_puzzle(floors_state:FloorMap, steps_count=0):
+min_steps = 20
+counter = 0
 
-    steps = steps_count
-    min_steps = (1 << 63) - 1
+# @lru_cache
+def run_puzzle(floors_state:FloorMap, steps_count=1, history:list[FloorMap]=None):
+    global min_steps, counter
+
+    if steps_count > min_steps: return
+
+    if history is None:
+        history = [floors_state]
+    else:
+        history.append(floors_state)
     
-    for floor_num in floors_state:
+    for floor_num in range(len(floors_state)):
         floor = floors_state[floor_num]
         if len(floor) == 0: continue
         
@@ -89,4 +100,18 @@ def run_puzzle(floors_state:FloorMap, steps_count=0):
                 results += [(move(item_1, item_2, floor_num, destination, floors_state) for destination in other_floors)]
         
         for status, new_state in chain.from_iterable(results):
-            pass
+            if status == FAIL: continue
+            
+            if status == FINISHED:
+                min_steps = min(steps_count, min_steps)
+                continue
+            
+            if new_state not in history:
+                run_puzzle(new_state, steps_count+1, history.copy())
+        
+        counter += 1
+        if counter % 100 == 0:
+            print(steps_count)
+
+run_puzzle(floors)
+print(min_steps)
