@@ -59,7 +59,7 @@ static void parse_instructions(
     size_t *destination_id  // OUTPUT: index of the destination stack
 )
 {
-    // Split the line is the blank spaces
+    // Split the line in the blank spaces
     const char delimiter[] = " ";
     char *token = strtok(line, delimiter);
     
@@ -100,6 +100,7 @@ int main (int argc, char **argv)
     memset(stack_top_p2, 0, sizeof(stack_top_p2));
     memset(stack_bottom_p2, 0, sizeof(stack_bottom_p2));
 
+    // Populate the stacks with the initial box configuration
     // Read the first few lines until we find a digit as the line's second character
     while (fgets(line, sizeof(line), input) != NULL)
     {
