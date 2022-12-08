@@ -53,7 +53,8 @@ int main(int arc, char **argv)
     
     fclose(input);
     
-    uint8_t visible[rows][columns];
+    uint64_t visible_count = (rows * 2) + (columns * 2) - 4;
+    bool visible[rows][columns];
     memset(visible, 0, sizeof(visible));
     
     for (size_t y = 1; y < rows - 1; y++)
@@ -69,13 +70,15 @@ int main(int arc, char **argv)
             const uint8_t tree_right = trees[y][columns-x];
             if (is_visible_left && tree_left > local_max_left)
             {
-                visible[y][x] += 1;
+                if (!visible[y][x]) visible_count++;
+                visible[y][x] = true;
                 local_max_left = tree_left;
                 if (max_tree_row[y] == local_max_left) is_visible_left = false;
             }
             if (is_visible_right && tree_right > local_max_right)
             {
-                visible[y][columns-x] += 1;
+                if (!visible[y][columns-x]) visible_count++;
+                visible[y][columns-x] = true;
                 local_max_right = tree_right;
                 if (max_tree_row[y] == local_max_right) is_visible_right = false;
             }
@@ -97,28 +100,21 @@ int main(int arc, char **argv)
             
             if (is_visible_top && tree_top > local_max_top)
             {
-                visible[y][x] += 1;
+                if (!visible[y][x]) visible_count++;
+                visible[y][x] = true;
                 local_max_top = tree_top;
                 if (local_max_top == max_tree_col[x]) is_visible_top = false;
             }
 
             if (is_visible_bottom && tree_bottom > local_max_bottom)
             {
-                visible[rows-y][x] += 1;
+                if (!visible[rows-y][x]) visible_count++;
+                visible[rows-y][x] = true;
                 local_max_bottom = tree_bottom;
                 if (local_max_bottom == max_tree_col[x]) is_visible_bottom = false;
             }
 
             if (!is_visible_top && !is_visible_bottom) break;
-        }
-    }
-
-    uint64_t visible_count = (rows * 2) + (columns * 2) - 4;
-    for (size_t y = 0; y < rows; y++)
-    {
-        for (size_t x = 0; x < columns; x++)
-        {
-            if (visible[y][x] > 0) visible_count++;
         }
     }
     
