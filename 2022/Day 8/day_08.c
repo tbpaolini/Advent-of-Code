@@ -118,5 +118,46 @@ int main(int arc, char **argv)
         }
     }
     
-    return 0;
+    printf("Part 1: %lu visible trees\n", visible_count);
+
+    uint64_t max_score = 0;
+
+    for (size_t y1 = 1; y1 < rows - 1; y1++)
+    {
+        for (size_t x1 = 1; x1 < columns - 1; x1++)
+        {
+            if (!visible[y1][x1]) continue;
+
+            uint64_t view_count[4] = {0, 0, 0, 0};
+            
+            for (size_t y2 = y1+1; y2 < rows; y2++)
+            {
+                view_count[0]++;
+                if (trees[y1][x1] == trees[y2][x1]) break;
+            }
+            
+            for (int64_t y2 = y1-1; y2 >= 0; y2--)
+            {
+                view_count[1]++;
+                if (trees[y1][x1] == trees[y2][x1]) break;
+            }
+
+            for (int64_t x2 = x1+1; x2 < columns; x2++)
+            {
+                view_count[2]++;
+                if (trees[y1][x1] == trees[y1][x2]) break;
+            }
+            
+            for (int64_t x2 = x1-1; x2 >= 0; x2--)
+            {
+                view_count[3]++;
+                if (trees[y1][x1] == trees[y1][x2]) break;
+            }
+
+            uint64_t my_score = view_count[0] * view_count[1] * view_count[2] * view_count[3];
+            if (my_score > max_score) max_score = my_score;
+        }
+    }
+
+    printf("Part 2: %lu scenic score\n", max_score);
 }
