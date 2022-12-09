@@ -93,7 +93,7 @@ static inline Coord2_i64 coord_dir(Coord2_i64 coord_a, Coord2_i64 coord_b)
 
 int main(int argc, char **argv)
 {
-    FILE *input = fopen("test.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char line[8];
 
     Coord2_i64 pos   = {0, 0};                  // Current position
@@ -145,6 +145,7 @@ int main(int argc, char **argv)
     } rope = {{abs(min.x), abs(min.y)}, {abs(min.x), abs(min.y)}};
 
     locations[rope.tail.y][rope.tail.x] = true;
+    uint64_t location_count = 1;
 
     for (size_t i = 0; i < move_count; i++)
     {
@@ -173,7 +174,7 @@ int main(int argc, char **argv)
                     {
                         // Diagonally adjascent (do nothing)
                     }
-                    else if (tail_direction.y == 1)
+                    else if (abs(tail_direction.y) == 1)
                     {
                         // Vertically separated (move up or down)
                         rope.tail.y += tail_direction.y;
@@ -181,6 +182,7 @@ int main(int argc, char **argv)
                     else
                     {
                         // Horizontally separated (move right or left)
+                        assert(abs(tail_direction.x) == 1 && tail_direction.y == 0);
                         rope.tail.x += tail_direction.x;
                     }
                     
@@ -198,15 +200,18 @@ int main(int argc, char **argv)
             }
 
             // Update the positions where the rope has been
+            if (!locations[rope.tail.y][rope.tail.x]) location_count++;
             locations[rope.tail.y][rope.tail.x] = true;
         }
     }
     
     FILE *output = fopen("output.txt", "wt");
+    size_t test = 0;
     for (int64_t y = height-1; y >= 0; y--)
     {
         for (int64_t x = 0; x < width; x++)
         {
+            test += locations[y][x];
             const char text = locations[y][x] ? '#' : '.';
             fputc(text, output);
         }
