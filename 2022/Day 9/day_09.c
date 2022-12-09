@@ -135,55 +135,79 @@ int main(int argc, char **argv)
 
     const int64_t width  = abs(max.x - min.x) + 1;
     const int64_t height = abs(max.y - min.y) + 1;
-    bool locations[height][width];
-    memset(locations, 0, sizeof(locations));
 
+    // Store the locations where the rope has been
+    bool locations_p1[height][width];   // Part 1's locations
+    bool locations_p2[height][width];   // Part 2's locations
+    memset(locations_p1, 0, sizeof(locations_p1));
+    memset(locations_p2, 0, sizeof(locations_p1));
+
+    // Part 1's rope
     struct Rope
     {
         Coord2_i64 head;
         Coord2_i64 tail;
-    } rope = {{abs(min.x), abs(min.y)}, {abs(min.x), abs(min.y)}};
+    } rope_p1 = {{abs(min.x), abs(min.y)}, {abs(min.x), abs(min.y)}};
 
-    locations[rope.tail.y][rope.tail.x] = true;
-    uint64_t location_count = 1;
+    locations_p1[rope_p1.tail.y][rope_p1.tail.x] = true;
+    uint64_t location_count_p1 = 1;
+
+    // Part 2's rope
+    Coord2_i64 rope_p2[10];
+    for (size_t i = 0; i < 10; i++)
+    {
+        // Starting position of all knots
+        rope_p2[i] = (Coord2_i64){abs(min.x), abs(min.y)};
+    }
+    locations_p2[rope_p2[9].y][rope_p2[9].x] = true;
+    uint64_t location_count_p2 = 1;
 
     for (size_t i = 0; i < move_count; i++)
     {
+        // Get the destination of the ropes' head
         delta = movements[i];
-        Coord2_i64 head_destination = rope.head;
+        Coord2_i64 head_destination = rope_p1.head;
         coord_add(&head_destination, &delta);
 
-        const int64_t head_distance = coord_dist(rope.head, head_destination);
-        Coord2_i64 head_direction = coord_dir(rope.head, head_destination);
+        // Get the direction and distance the head will move
+        const int64_t head_distance = coord_dist(rope_p1.head, head_destination);
+        Coord2_i64 head_direction = coord_dir(rope_p1.head, head_destination);
 
+        // Move the head one step at a time
         for (size_t j = 0; j < head_distance; j++)
         {
-            coord_add(&rope.head, &head_direction);
-            const int64_t tail_distance = coord_dist(rope.tail, rope.head);
-            Coord2_i64 tail_direction = coord_dir(rope.tail, rope.head);
+            /******************** Part 1 ********************/
             
-            switch (tail_distance)
+            // Move the head
+            coord_add(&rope_p1.head, &head_direction);
+            
+            // Get the distance and orientation of the tail in relation to the head
+            const int64_t tail_distance_p1 = coord_dist(rope_p1.tail, rope_p1.head);
+            Coord2_i64 tail_direction_p1 = coord_dir(rope_p1.tail, rope_p1.head);
+            
+            // Move the tail if it is not asjascent to the head
+            switch (tail_distance_p1)
             {
                 case 3: // Separated on the diagonal
-                    coord_add(&rope.tail, &tail_direction);
+                    coord_add(&rope_p1.tail, &tail_direction_p1);
                     break;
                 
                 case 2: // Diagonally adjascent or separated on one axis
                     
-                    if (abs(tail_direction.x) == 1 && abs(tail_direction.y) == 1)
+                    if (abs(tail_direction_p1.x) == 1 && abs(tail_direction_p1.y) == 1)
                     {
                         // Diagonally adjascent (do nothing)
                     }
-                    else if (abs(tail_direction.y) == 1)
+                    else if (abs(tail_direction_p1.y) == 1)
                     {
                         // Vertically separated (move up or down)
-                        rope.tail.y += tail_direction.y;
+                        rope_p1.tail.y += tail_direction_p1.y;
                     }
                     else
                     {
                         // Horizontally separated (move right or left)
-                        assert(abs(tail_direction.x) == 1 && tail_direction.y == 0);
-                        rope.tail.x += tail_direction.x;
+                        assert(abs(tail_direction_p1.x) == 1 && tail_direction_p1.y == 0);
+                        rope_p1.tail.x += tail_direction_p1.x;
                     }
                     
                     break;
@@ -199,25 +223,93 @@ int main(int argc, char **argv)
                     break;
             }
 
-            // Update the positions where the rope has been
-            if (!locations[rope.tail.y][rope.tail.x]) location_count++;
-            locations[rope.tail.y][rope.tail.x] = true;
+            // Update the positions where the tail has been
+            if (!locations_p1[rope_p1.tail.y][rope_p1.tail.x]) location_count_p1++;
+            locations_p1[rope_p1.tail.y][rope_p1.tail.x] = true;
+
+            /******************** Part 2 ********************/
+
+            // Move the head
+            coord_add(&rope_p2[0], &head_direction);
+            
+            // Loop through the 9 knots of the tail
+            for (int64_t k = 1; k < 10; k++)
+            {
+                // Get the distance and orientation of the knot in relation to the previous
+                const int64_t tail_distance_p2 = coord_dist(rope_p2[k], rope_p2[k-1]);
+                Coord2_i64 tail_direction_p2 = coord_dir(rope_p2[k], rope_p2[k-1]);
+
+                // Move the knot if it is not asjascent to the previous
+                // Note: When there are more than 2 knots, there is te possibility that one knot moves
+                //       diagonally in relation to the next one. Because of that, we are also checking
+                //       the distance of 4 (which is where the next knot will land is this case).
+                switch (tail_distance_p2)
+                {
+                    case 3: // Separated on the diagonal
+                    case 4: // Separated on the diagonal
+                        coord_add(&rope_p2[k], &tail_direction_p2);
+                        break;
+                    
+                    case 2: // Diagonally adjascent or separated on one axis
+                        
+                        if (abs(tail_direction_p2.x) == 1 && abs(tail_direction_p2.y) == 1)
+                        {
+                            // Diagonally adjascent (do nothing)
+                        }
+                        else if (abs(tail_direction_p2.y) == 1)
+                        {
+                            // Vertically separated (move up or down)
+                            rope_p2[k].y += tail_direction_p2.y;
+                        }
+                        else
+                        {
+                            // Horizontally separated (move right or left)
+                            assert(abs(tail_direction_p2.x) == 1 && tail_direction_p2.y == 0);
+                            rope_p2[k].x += tail_direction_p2.x;
+                        }
+                        
+                        break;
+                    
+                    case 1: // Vertically or horizontally adjascent
+                    case 0: // Both at the same position
+                        // (do nothing)
+                        break;
+
+                    default:
+                        fprintf(stderr, "Error: Head and tail got too far away.\n");
+                        abort();
+                        break;
+                }
+            }
+
+            // Update the positions where the last knot has been
+            if (!locations_p2[rope_p2[9].y][rope_p2[9].x]) location_count_p2++;
+            locations_p2[rope_p2[9].y][rope_p2[9].x] = true;
         }
     }
     
-    FILE *output = fopen("output.txt", "wt");
-    size_t test = 0;
-    for (int64_t y = height-1; y >= 0; y--)
+    // Save the visualizations to text files
+    FILE *output_p1 = fopen("output_p1.txt", "wt");
+    FILE *output_p2 = fopen("output_p2.txt", "wt");
+    
+    for (int64_t y = height-1; y >= 0; y--) // From top to bottom
     {
-        for (int64_t x = 0; x < width; x++)
+        for (int64_t x = 0; x < width; x++) // From left to right
         {
-            test += locations[y][x];
-            const char text = locations[y][x] ? '#' : '.';
-            fputc(text, output);
+            // Write '#' if the rope has been on the position, '.' otherwise
+            const char text_p1 = locations_p1[y][x] ? '#' : '.';
+            const char text_p2 = locations_p2[y][x] ? '#' : '.';
+            fputc(text_p1, output_p1);
+            fputc(text_p2, output_p2);
         }
 
-        fputc('\n', output);
+        // Line break at the end of the row
+        fputc('\n', output_p1);
+        fputc('\n', output_p2);
     }
-    fclose(output);
-    
+
+    fclose(output_p1);
+    fclose(output_p2);
+
+    return 0;
 }
