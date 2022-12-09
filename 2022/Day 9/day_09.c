@@ -11,46 +11,54 @@ typedef struct Coord2_i64 {
     int64_t y;
 } Coord2_i64;
 
+// Extract the movement from a line of the input file
 static void parse_input(char *line, Coord2_i64 *output)
 {
-    const char *direction = &line[0];
-    const int64_t distance = atol(&line[2]);
+    const char *direction = &line[0];           // Direction to move
+    const int64_t distance = atol(&line[2]);    // Distance in that direction
     
     switch (direction[0])
     {
         case 'R':
+            // Move right
             output->x = distance;
             output->y = 0;
             break;
         
         case 'U':
+            // Move up
             output->x = 0;
             output->y = distance;
             break;
         
         case 'L':
+            // Move left
             output->x = -1 * distance;
             output->y = 0;
             break;
         
         case 'D':
+            // Move down
             output->x = 0;
             output->y = -1 * distance;
             break;
         
         default:
+            // We should never reach this branch
             fprintf(stderr, "Error: Malformatted input\n");
             abort();
             break;
     }
 }
 
+// Takes 2 coordinates, and do in-place addition of the second to the first
 void coord_add(Coord2_i64 *restrict coord_a, Coord2_i64 *restrict coord_b)
 {
     coord_a->x += coord_b->x;
     coord_a->y += coord_b->y;
 }
 
+// Difference between two coordinates on each axis
 static inline Coord2_i64 coord_diff(Coord2_i64 coord_a, Coord2_i64 coord_b)
 {
     return (Coord2_i64){
@@ -59,11 +67,13 @@ static inline Coord2_i64 coord_diff(Coord2_i64 coord_a, Coord2_i64 coord_b)
     };
 }
 
+// Absolute taxicab distance between two coordinates
 static inline int64_t coord_dist(Coord2_i64 coord_a, Coord2_i64 coord_b)
 {
     return abs(coord_a.x - coord_b.x) + abs(coord_a.y - coord_b.y);
 }
 
+// Returns whether a signed integer is positive (+1), negative (-1), or zero (0)
 static inline int64_t get_sign(int64_t value)
 {
     if (value > 0)
@@ -83,6 +93,10 @@ static inline int64_t get_sign(int64_t value)
     }
 }
 
+// The relative direction, on each axis, between two coordinates:
+// +1: above (y) or right (x)
+// -1: below (y) or left  (x)
+//  0: on the same axis position
 static inline Coord2_i64 coord_dir(Coord2_i64 coord_a, Coord2_i64 coord_b)
 {
     return (Coord2_i64){
@@ -133,6 +147,7 @@ int main(int argc, char **argv)
     fclose(input);
     assert(max.x > min.x && max.y > min.y);
 
+    // Calculate the dimensions of the board
     const int64_t width  = abs(max.x - min.x) + 1;
     const int64_t height = abs(max.y - min.y) + 1;
 
@@ -159,9 +174,11 @@ int main(int argc, char **argv)
         // Starting position of all knots
         rope_p2[i] = (Coord2_i64){abs(min.x), abs(min.y)};
     }
+
     locations_p2[rope_p2[9].y][rope_p2[9].x] = true;
     uint64_t location_count_p2 = 1;
 
+    // Perform all movements on both ropes
     for (size_t i = 0; i < move_count; i++)
     {
         // Get the destination of the ropes' head
@@ -310,6 +327,9 @@ int main(int argc, char **argv)
 
     fclose(output_p1);
     fclose(output_p2);
+
+    printf("Part 1: %lu positions\n", location_count_p1);
+    printf("Part 2: %lu positions\n", location_count_p2);
 
     return 0;
 }
