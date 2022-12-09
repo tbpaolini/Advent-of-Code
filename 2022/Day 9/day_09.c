@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include <ctype.h>
 #include <assert.h>
 
 // (x, y) coordinates
@@ -70,15 +69,26 @@ int main(int argc, char **argv)
     // Array to store the movements
     Coord2_i64 movements[move_count];
     memset(movements, 0, sizeof(movements));
-    size_t move_index = 0;
+
+    // Array to store the positions of the rope's head
+    Coord2_i64 head_pos[move_count];
+    memset(head_pos, 0, sizeof(head_pos));
 
     // Parse the movements from the input
-    while (fgets(line, sizeof(line), input))
+    
+    for (size_t move_index = 0; move_index < move_count; move_index++)
     {
+        char *status = fgets(line, sizeof(line), input);
+        
+        // Calculate the distance to move
         parse_input(line, &delta);
-        movements[move_index++] = delta;
+        movements[move_index] = delta;
+        
+        // Move the rope's head
         coord_add(&pos, &delta);
+        head_pos[move_index] = pos;
 
+        // Check the maximum and minimum coordinates
         if (pos.x > max.x) max.x = pos.x;
         if (pos.y > max.y) max.y = pos.y;
         if (pos.x < min.x) min.x = pos.x;
@@ -86,4 +96,25 @@ int main(int argc, char **argv)
     }
     
     fclose(input);
+    assert(max.x > min.x && max.y > min.y);
+
+    const int64_t width  = max.x - min.x;
+    const int64_t height = max.y - min.y;
+    bool locations[height][width];
+    memset(locations, 0, sizeof(locations));
+
+    struct Rope
+    {
+        Coord2_i64 head;
+        Coord2_i64 tail;
+    } rope = {{abs(min.x), abs(min.y)}, {abs(min.x), abs(min.y)}};
+
+    locations[rope.head.y][rope.head.x] = true;
+    uint64_t locations_count = 1;
+
+    for (size_t i = 0; i < move_count; i++)
+    {
+        delta = movements[i];
+    }
+    
 }
