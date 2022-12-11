@@ -175,7 +175,7 @@ static void do_round(
 
 int main(int argc, char **argv)
 {
-    FILE *input = fopen("test.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char line[128];
     
     // Count how many lines the file has
@@ -187,14 +187,14 @@ int main(int argc, char **argv)
     // Notes:
     //  - One monkey each 7 lines.
     //  - Added 1 to the line count because there is not a blank line at the end of the file.
-    size_t monkey_count = (line_count + 1) / 7;
+    size_t monkey_amount = (line_count + 1) / 7;
 
     // Array to store the state of each monkey
-    Monkey monkeys[monkey_count];
+    Monkey monkeys[monkey_amount];
     memset(monkeys, 0, sizeof(monkeys));
 
     // Parse the initial state of the monkeys
-    for (size_t i = 0; i < monkey_count; i++)
+    for (size_t i = 0; i < monkey_amount; i++)
     {
         char *status = NULL;
         
@@ -264,8 +264,25 @@ int main(int argc, char **argv)
 
     for (size_t i = 0; i < 20; i++)
     {
-        do_round(monkeys, monkey_count);
+        do_round(monkeys, monkey_amount);
     }
+
+    uint64_t top_1, top_2;
+    for (size_t i = 0; i < monkey_amount; i++)
+    {
+        uint64_t activity = monkeys[i].activity;
+        if (activity > top_1)
+        {
+            top_2 = top_1;
+            top_1 = activity;
+        }
+        else if (activity > top_2)
+        {
+            top_2 = activity;
+        }
+    }
+
+    uint64_t monkey_business = top_1 * top_2;
 
     return 0;
 }
