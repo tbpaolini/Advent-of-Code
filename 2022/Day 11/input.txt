@@ -38,6 +38,7 @@ Monkey 5:
   Operation: new = old + 4
   Test: divisible by 13
     If true: throw to monkey 6
+    If false: throw to monkey 3
 
 Monkey 6:
   Starting items: 52, 51, 84, 54
