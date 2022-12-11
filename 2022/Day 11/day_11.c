@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <assert.h>
 
+// Struct to represent the monkeys and the items they are holding
 typedef struct Monkey
 {
     struct ItemQueue    // A queue of items (first in, last out)
@@ -14,12 +15,14 @@ typedef struct Monkey
         struct ItemNode *tail;  // Last item of the queue
     } items;
     char operator;      // The operator that the monkey will apply to the worry level ('+' or '*')
-    uint64_t operand;   // The value that the monkey will add or multiply to the worry level (if this is UINT64_MAX, then the operand is the current worry level itself)
+    uint64_t operand;   // The value that the monkey will add or multiply to the worry level (if this is OLD_VALUE, then the operand is the current worry level itself)
     uint64_t div_test;  // Test if the worry level's result is divisible by this value
     size_t if_true;     // Index of the next monkey if the test passes
     size_t if_false;    // Index of the next monkey if the test fails
     uint64_t activity;  // How many times this monkey has inspected an item
 } Monkey;
+
+static const uint64_t OLD_VALUE = UINT64_MAX;   // Use the old value of the worry level during the '+' or '*' operation
 
 // A node on the queue of items
 typedef struct ItemNode
@@ -70,6 +73,10 @@ static ItemNode* queue_pop(Monkey *monkey)
     // If the removed item was the last, set the queue's tail to NULL
     if (!item->next) monkey->items.tail = NULL;
 
+    // Since the item is outside a queue now, it has no next or previous items
+    item->next = NULL;
+    item->previous = NULL;
+
     return item;
 }
 
@@ -92,9 +99,83 @@ static inline bool str_startswith(char *string, char *substring)
     return strncmp(string, substring, sub_length) == 0;
 }
 
+// Perform a round of Keep Away on an array of monkeys
+// Note: The array is modified in-place.
+static void do_round(
+    Monkey monkey_array[],  // Array of monkeys
+    size_t monkey_amount    // Number of monkeys in the array
+)
+{
+    // Loop through all monkeys
+    for (size_t i = 0; i < monkey_amount; i++)
+    {
+        Monkey *current_monkey = &monkey_array[i];
+        ItemNode *current_item = queue_pop(current_monkey);
+        
+        // Loop through all items with the monkey
+        while (current_item)
+        {
+            // Increment the monkey's activity counter
+            current_monkey->activity++;
+            
+            // Which value to add or multiply to the current worry level
+            // (might be either the current worry level or a fixed value)
+            uint64_t value;
+            if (current_monkey->operand == OLD_VALUE)
+            {
+                value = current_item->worry_level;
+            }
+            else
+            {
+                value = current_monkey->operand;
+            }
+
+            // Which operation to perform with the value
+            if (current_monkey->operator == '+')
+            {
+                // Addition
+                current_item->worry_level += value;
+            }
+            else if (current_monkey->operator == '*')
+            {
+                // Multiplication
+                current_item->worry_level *= value;
+            }
+            else
+            {
+                fprintf(stderr, "Error: Illegal operation '%c'", current_monkey->operator);
+                abort();
+            }
+
+            // Monkey plays with the item:
+            // The worry level is divided by 3 and then rounded down to the nearest integer
+            current_item->worry_level /= 3;
+
+            // Determine which monkey to give the item to
+            Monkey *next_monkey;
+            if (current_item->worry_level % current_monkey->div_test == 0)
+            {
+                // Is divisible by the test value
+                next_monkey = &monkey_array[current_monkey->if_true];
+            }
+            else
+            {
+                // Is not divisible by the test value
+                next_monkey = &monkey_array[current_monkey->if_false];
+            }
+
+            // Give the item to the next monkey
+            queue_add(next_monkey, current_item);
+
+            // Move to the next item
+            current_item = queue_pop(current_monkey);
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
-    FILE *input = fopen("input.txt", "rt");
+    FILE *input = fopen("test.txt", "rt");
     char line[128];
     
     // Count how many lines the file has
@@ -180,6 +261,11 @@ int main(int argc, char **argv)
     }
 
     fclose(input);
+
+    for (size_t i = 0; i < 20; i++)
+    {
+        do_round(monkeys, monkey_count);
+    }
 
     return 0;
 }
