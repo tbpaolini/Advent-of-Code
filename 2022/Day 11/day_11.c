@@ -108,6 +108,27 @@ static void do_round(
     bool is_part_1          // Whether we are at Part 1 of the puzzle
 )
 {
+    // Common multiple
+    uint64_t common_multiple = 1;
+    for (size_t i = 0; i < monkey_amount; i++)
+    {
+        common_multiple *= monkey_array[i].div_test;
+    }
+    /* Note:
+        In Part 2, the worry levels will overflow, which breaks the division test.
+        In order to prevent that, it is necessary to take the modulo of the worry level
+        by a common multiple among all divisors of the test. Because the modulo result
+        wraps back to zero when the dividend is multiple of the divisor.
+        
+        Any common multiple will do, as long it does not overflow too.
+        Ideally, it should be the least common multiple (LCM). However, the divisors on
+        the puzzle are always prime. So, in this case, it should suffice to just
+        multiply them in order to get the LCM.
+
+        But I am not naming the variable as `least_common_multiple` to avoid confusion,
+        since the product of values is not necessarily their LCM.
+    */
+    
     // Loop through all monkeys
     for (size_t i = 0; i < monkey_amount; i++)
     {
@@ -152,6 +173,9 @@ static void do_round(
             // Monkey plays with the item:
             // During part 1, the worry level is divided by 3, then rounded down to the nearest integer
             if (is_part_1) current_item->worry_level /= 3;
+
+            // Prevent an integer overflow (relevant for Part 2)
+            current_item->worry_level %= common_multiple;
 
             // Determine which monkey to give the item to
             Monkey *next_monkey;
@@ -206,7 +230,7 @@ static uint64_t get_monkey_business(Monkey monkey_array[], size_t monkey_amount)
 
 int main(int argc, char **argv)
 {
-    FILE *input = fopen("test.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char line[128];
     
     // Count how many lines the file has
