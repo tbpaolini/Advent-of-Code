@@ -33,15 +33,16 @@ typedef struct ItemNode
 } ItemNode;
 
 // Create a new node for the item queue
-static ItemNode* node_new()
+static ItemNode* item_new(uint64_t worry_level)
 {
-    ItemNode *node = (ItemNode*)calloc(1, sizeof(ItemNode));
-    if (node == NULL)
+    ItemNode *item = (ItemNode*)calloc(1, sizeof(ItemNode));
+    if (item == NULL)
     {
         fprintf(stderr, "Error: No enough memory\n");
         abort();
     }
-    return node;
+    item->worry_level = worry_level;
+    return item;
 }
 
 // Add an item to the end of the queue
@@ -103,7 +104,8 @@ static inline bool str_startswith(char *string, char *substring)
 // Note: The array is modified in-place.
 static void do_round(
     Monkey monkey_array[],  // Array of monkeys
-    size_t monkey_amount    // Number of monkeys in the array
+    size_t monkey_amount,   // Number of monkeys in the array
+    bool is_part_1          // Whether we are at Part 1 of the puzzle
 )
 {
     // Loop through all monkeys
@@ -148,8 +150,8 @@ static void do_round(
             }
 
             // Monkey plays with the item:
-            // The worry level is divided by 3 and then rounded down to the nearest integer
-            current_item->worry_level /= 3;
+            // During part 1, the worry level is divided by 3, then rounded down to the nearest integer
+            if (is_part_1) current_item->worry_level /= 3;
 
             // Determine which monkey to give the item to
             Monkey *next_monkey;
@@ -173,9 +175,38 @@ static void do_round(
     }
 }
 
+// Calculate the "monkey business" from the monkey array
+// (the product of the top 2 activity counters)
+static uint64_t get_monkey_business(Monkey monkey_array[], size_t monkey_amount)
+{
+    // The top 2 activity counters
+    uint64_t top_1 = 0;
+    uint64_t top_2 = 0;
+    
+    // Loop through all values of the activity counters
+    for (size_t i = 0; i < monkey_amount; i++)
+    {
+        uint64_t activity = monkey_array[i].activity;
+        if (activity > top_1)
+        {
+            // Value is bigger than Top 1
+            top_2 = top_1;      // Top 1 becomes Top 2
+            top_1 = activity;   // Top 1 becomes the new value
+        }
+        else if (activity > top_2)
+        {
+            // Value is bigger than Top 2, but smaller or equal than Top 1
+            top_2 = activity;   // Top 2 becomes the new value
+        }
+    }
+
+    // Monkey business! 🐒
+    return top_1 * top_2;
+}
+
 int main(int argc, char **argv)
 {
-    FILE *input = fopen("input.txt", "rt");
+    FILE *input = fopen("test.txt", "rt");
     char line[128];
     
     // Count how many lines the file has
@@ -190,8 +221,10 @@ int main(int argc, char **argv)
     size_t monkey_amount = (line_count + 1) / 7;
 
     // Array to store the state of each monkey
-    Monkey monkeys[monkey_amount];
-    memset(monkeys, 0, sizeof(monkeys));
+    Monkey monkeys_p1[monkey_amount];   // Part 1's monkeys
+    Monkey monkeys_p2[monkey_amount];   // Part 2's monkeys
+    memset(monkeys_p1, 0, sizeof(monkeys_p1));
+    memset(monkeys_p2, 0, sizeof(monkeys_p2));
 
     // Parse the initial state of the monkeys
     for (size_t i = 0; i < monkey_amount; i++)
@@ -212,10 +245,12 @@ int main(int argc, char **argv)
         
         while (item_token != NULL)
         {
-            ItemNode *new_item = node_new();            // Create the new item
-            new_item->worry_level = atol(item_token);   // Convert the item's worry level to numeric
-            queue_add(&monkeys[i], new_item);           // Add the item to the monkey's queue
-            item_token = strtok(NULL, item_delimiter);  // Get the next item
+            uint64_t worry_level = atol(item_token);        // Convert the item's worry level to numeric
+            ItemNode *new_item_p1 = item_new(worry_level);  // Create the new item (Part 1)
+            ItemNode *new_item_p2 = item_new(worry_level);  // Create the new item (Part 2)
+            queue_add(&monkeys_p1[i], new_item_p1);         // Add the item to the monkey's queue (Part 1)
+            queue_add(&monkeys_p2[i], new_item_p2);         // Add the item to the monkey's queue (Part 2)
+            item_token = strtok(NULL, item_delimiter);      // Get the next item
         }
 
         // Parse the operation to be performed with the item
@@ -223,27 +258,32 @@ int main(int argc, char **argv)
         assert(str_startswith(line, "  Operation: new = old "));
         
         // Whether to perform addition or multiplication
-        monkeys[i].operator = line[23];
-        assert(monkeys[i].operator == '+' || monkeys[i].operator == '*');
+        monkeys_p1[i].operator = line[23];
+        monkeys_p2[i].operator = line[23];
+        assert(monkeys_p1[i].operator == '+' || monkeys_p1[i].operator == '*');
 
         // The value to add or multiply
         assert(isdigit(line[25]) || strcmp(&line[25], "old\n") == 0);
-        monkeys[i].operand = isdigit(line[25]) ? atol(&line[25]) : UINT64_MAX;
+        monkeys_p1[i].operand = isdigit(line[25]) ? atol(&line[25]) : UINT64_MAX;
+        monkeys_p2[i].operand = isdigit(line[25]) ? atol(&line[25]) : UINT64_MAX;
 
         // Parse the division test
         status = fgets(line, sizeof(line), input);
         assert(str_startswith(line, "  Test: divisible by ") && isdigit(line[21]));
-        monkeys[i].div_test = atol(&line[21]);
+        monkeys_p1[i].div_test = atol(&line[21]);
+        monkeys_p2[i].div_test = atol(&line[21]);
 
         // Next monkey if the division test passes
         status = fgets(line, sizeof(line), input);
         assert(str_startswith(line, "    If true: throw to monkey ") && isdigit(line[29]));
-        monkeys[i].if_true = atol(&line[29]);
+        monkeys_p1[i].if_true = atol(&line[29]);
+        monkeys_p2[i].if_true = atol(&line[29]);
 
         // Next monkey if the division test fails
         status = fgets(line, sizeof(line), input);
         assert(str_startswith(line, "    If false: throw to monkey ") && isdigit(line[30]));
-        monkeys[i].if_false = atol(&line[30]);
+        monkeys_p1[i].if_false = atol(&line[30]);
+        monkeys_p2[i].if_false = atol(&line[30]);
 
         // Check if the file did not end halfway through the parsing
         if (status == NULL)
@@ -264,25 +304,19 @@ int main(int argc, char **argv)
 
     for (size_t i = 0; i < 20; i++)
     {
-        do_round(monkeys, monkey_amount);
+        do_round(monkeys_p1, monkey_amount, true);
     }
 
-    uint64_t top_1, top_2;
-    for (size_t i = 0; i < monkey_amount; i++)
+    uint64_t monkey_business_p1 = get_monkey_business(monkeys_p1, monkey_amount);
+    printf("Part 1: %lu monkey business\n", monkey_business_p1);
+
+    for (size_t i = 0; i < 10000; i++)
     {
-        uint64_t activity = monkeys[i].activity;
-        if (activity > top_1)
-        {
-            top_2 = top_1;
-            top_1 = activity;
-        }
-        else if (activity > top_2)
-        {
-            top_2 = activity;
-        }
+        do_round(monkeys_p2, monkey_amount, false);
     }
 
-    uint64_t monkey_business = top_1 * top_2;
+    uint64_t monkey_business_p2 = get_monkey_business(monkeys_p2, monkey_amount);
+    printf("Part 2: %lu monkey business\n", monkey_business_p2);
 
     return 0;
 }
