@@ -326,21 +326,33 @@ int main(int argc, char **argv)
 
     fclose(input);
 
+    // Perform 20 rounds for Part 1
     for (size_t i = 0; i < 20; i++)
     {
-        do_round(monkeys_p1, monkey_amount, true);
+        do_round(monkeys_p1, monkey_amount, true);  // Worry level gets divided by 3 each step
     }
 
+    // Multiply the top 2 activity levels
     uint64_t monkey_business_p1 = get_monkey_business(monkeys_p1, monkey_amount);
     printf("Part 1: %lu monkey business\n", monkey_business_p1);
 
+    // Parform 10000 rounds for Part 2
     for (size_t i = 0; i < 10000; i++)
     {
-        do_round(monkeys_p2, monkey_amount, false);
+        do_round(monkeys_p2, monkey_amount, false); // Worry level does not get divided by 3
     }
 
+    // Multiply the top 2 activity levels
     uint64_t monkey_business_p2 = get_monkey_business(monkeys_p2, monkey_amount);
     printf("Part 2: %lu monkey business\n", monkey_business_p2);
+
+    // Garbage collection
+    // (not strictly necessary here, but it still is goof practice :-)
+    for (size_t i = 0; i < monkey_amount; i++)
+    {
+        queue_destroy(&monkeys_p1[i]);
+        queue_destroy(&monkeys_p2[i]);
+    }
 
     return 0;
 }
