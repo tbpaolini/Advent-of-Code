@@ -7,18 +7,17 @@
 #include <stddef.h>
 #include <assert.h>
 
-
 typedef struct MountainCoord
 {
-    size_t x;
-    size_t y;
+    int64_t x;
+    int64_t y;
 } MountainCoord;
 
 typedef struct MountainNode
 {
     struct MountainCoord coord;     // (x, y) coordinates of this node
-    uint64_t elevation;             // The cost to get here from the previous node
-    uint64_t total_cost;            // The total cost to get here from the start
+    int64_t elevation;              // The cost to get here from the previous node
+    int64_t total_cost;             // The total cost to get here from the start
     struct MountainNode *exits[4];  // The nodes this one connects to: {right, top, left, down} (NULL means no exit on a direction)
     bool visited;                   // Whether this node has been visited already
 } MountainNode;
@@ -30,8 +29,8 @@ typedef struct MountainMap
     struct MountainNode *start;     // Staring node
     struct MountainNode *current;   // Current node
     struct MountainNode *end;       // Destination node
-    uint64_t steps;                 // How many steps the path has
-    uint64_t total_cost;            // The total cost of the path
+    int64_t steps;                  // How many steps the path has
+    int64_t total_cost;             // The total cost of the path
     struct
     {
         struct MountainNode *current;   // Current node on the path
@@ -98,20 +97,22 @@ static MountainMap* map_create_empty(size_t width, size_t height)
     return mountain;
 }
 
-// Populate the MountainMap struct with the elevation values, and the start/end positions
+// Populate the MountainMap struct with the elevation values and the start/end positions.
+// Also links the map nodes to their respective exits.
 static void map_populate(MountainMap *empty_map, char **elevations)
 {
-    size_t columns = empty_map->max.x + 1;  // Width
-    size_t rows    = empty_map->max.y + 1;  // Height
+    int64_t columns = empty_map->max.x + 1; // Width
+    int64_t rows    = empty_map->max.y + 1; // Height
     
     // Loop through each coordinate
-    for (size_t y = 0; y < rows; y++)
+    for (int64_t y = 0; y < rows; y++)
     {
-        for (size_t x = 0; x < columns; x++)
+        for (int64_t x = 0; x < columns; x++)
         {
             // Get the current node
             MountainNode *node = &empty_map->map[y][x];
             node->coord = (MountainCoord){x, y};        // Store the coordinates
+            node->total_cost = INT64_MAX;               // Cost to get here from the start (defaults to 'infinity')
             char elevation = elevations[y][x];          // Get the elevation
 
             // Store the elevation
@@ -124,6 +125,7 @@ static void map_populate(MountainMap *empty_map, char **elevations)
             {
                 // We are at the starting node
                 node->elevation = 0;
+                node->total_cost = 0;
                 empty_map->start = node;
             }
             else if (elevation == 'E')
@@ -137,6 +139,40 @@ static void map_populate(MountainMap *empty_map, char **elevations)
                 // Invalid node
                 fprintf(stderr, "Error: Invalid elevation of '%c'\n", elevation);
                 abort();
+            }
+
+            // The coordinates of the exits of this node
+            const MountainCoord my_exits[4] = {
+                {x+1, y},   // Right
+                {x, y-1},   // Up
+                {x-1, y},   // Left
+                {x, y+1}    // Down
+            };
+            
+            // Store the exits of the current node
+            for (size_t i = 0; i < 4; i++)
+            {
+                // Get the exit's coordinates
+                const int64_t exit_x = my_exits[i].x;
+                const int64_t exit_y = my_exits[i].y;
+
+                // Skip if the exit is out of bounds
+                if (exit_x < 0 || exit_y < 0 || exit_x >= columns || exit_y >= rows)
+                {
+                    continue;
+                }
+                
+                // Pointer to the exit node
+                MountainNode *exit = &empty_map->map[exit_y][exit_x];
+
+                // Skip if the exit's elevation is too high
+                if (exit->elevation - node->elevation > 1)
+                {
+                    continue;
+                }
+
+                // Link the node to the exit
+                node->exits[i] = exit;
             }
         }
     }
