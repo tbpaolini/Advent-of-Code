@@ -19,6 +19,7 @@ typedef struct MountainNode
     int64_t elevation;              // The cost to get here from the previous node
     int64_t total_cost;             // The total cost to get here from the start
     struct MountainNode *exits[4];  // The nodes this one connects to: {right, top, left, down} (NULL means no exit on a direction)
+    struct MountainNode *from;      // Which node we came from while traversing the path
     bool visited;                   // Whether this node has been visited already
 } MountainNode;
 
@@ -35,7 +36,6 @@ typedef struct MountainMap
     struct MountainCoord max;       // Maximum indices on tha map array (y = row; x = column)
     struct MountainNode *start;     // Staring node
     struct MountainNode *end;       // Destination node
-    int64_t steps;                  // How many steps the path has
     int64_t total_cost;             // The total cost of the path
     MountainPath *path;             // Path from the start to the end
 } MountainMap;
@@ -195,12 +195,11 @@ static void pathfind_dijkstra(MountainMap *mountain)
 {
     // Starting position
     MountainNode *node = mountain->start;
-    MountainPath *path = new_path_node();
     int64_t cost = 0;
     
-    // Keep track of current position on the path
-    MountainPath *position = path;
-    position->node = node;
+    // Keep track of the known nodes
+    MountainPath *known_nodes = new_path_node();
+    known_nodes->node = node;
 
     // Move through the mountain until the destination node is reached
     while (node != mountain->end)
@@ -208,9 +207,9 @@ static void pathfind_dijkstra(MountainMap *mountain)
         // Mark the node as 'visited'
         node->visited = true;
         
-        cost++;                         // Moving to a node increases the cost by one
+        int64_t next_cost = cost + 1;   // Cost to move to the next node
         int64_t min_cost = INT64_MAX;   // Smallest cost among all node's exits
-        MountainNode *next_node = NULL; // Exit with the smallest cost
+        MountainNode *best_exit = NULL; // Exit with the smallest cost
         
         // Check the exits and update their costs
         for (size_t i = 0; i < 4; i++)
@@ -222,53 +221,32 @@ static void pathfind_dijkstra(MountainMap *mountain)
                 if (exit->visited) continue;
                 
                 // Update the minimum cost to the exit
-                if (exit->total_cost > cost)
+                if (exit->total_cost > next_cost)
                 {
-                    exit->total_cost = cost;
+                    exit->total_cost = next_cost;
                 }
                 
                 // Check if the exit has the minimum cost so far
                 if (cost < min_cost)
                 {
                     min_cost = cost;
-                    next_node = exit;
+                    best_exit = exit;
                 }
             }
         }
 
         // Check if there is any unvisited exit
-        if (next_node)
+        if (best_exit)
         {
-            // There is an exit: move to it
             
-            // Add the next position on the path
-            MountainPath *next_position = new_path_node();
-            next_position->node = next_node;
-            next_position->previous = position;
-            position->next = next_position;
-            position = next_position;
-            
-            // Move to the next node
-            node = next_node;
         }
         else
         {
-            // There is not an exit: move to the previous position
-            cost--;
             
-            // Remove the current step from the node
-            MountainPath *old_position = position;
-            position = position->previous;
-            position->next = NULL;
-            free(old_position);
-
-            // Move to the previous node
-            node = position->node;
         }
     }
 
     mountain->total_cost = cost;
-    mountain->path = path;
 }
 
 int main(int argc, char **argv)
