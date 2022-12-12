@@ -213,10 +213,9 @@ static void pathfind_dijkstra(MountainMap *mountain)
         MountainNode *next_node = NULL; // Exit with the smallest cost
         
         // Check the exits and update their costs
-        MountainNode *exit = NULL;
         for (size_t i = 0; i < 4; i++)
         {
-            exit = node->exits[i];
+            MountainNode *exit = node->exits[i];
             if (exit)
             {
                 // Skip the exit if it has already been visited
@@ -274,7 +273,7 @@ static void pathfind_dijkstra(MountainMap *mountain)
 
 int main(int argc, char **argv)
 {
-    FILE *input = fopen("input.txt", "rt");
+    FILE *input = fopen("test.txt", "rt");
     char line[128];
 
     size_t rows = 0;
@@ -314,6 +313,7 @@ int main(int argc, char **argv)
 
     MountainMap *mountain_p1 = map_create_empty(columns, rows);
     map_populate(mountain_p1, (char**)raw_map);
+    pathfind_dijkstra(mountain_p1);
     
     return 0;
 }
