@@ -198,8 +198,9 @@ static void pathfind_dijkstra(MountainMap *mountain)
     int64_t cost = 0;
     
     // Keep track of the known nodes
-    MountainPath *known_nodes = new_path_node();
-    known_nodes->node = node;
+    MountainPath *seen_nodes = new_path_node();
+    seen_nodes->node = node;
+    MountainPath *last_seen = seen_nodes;
 
     // Move through the mountain until the destination node is reached
     while (node != mountain->end)
@@ -208,8 +209,6 @@ static void pathfind_dijkstra(MountainMap *mountain)
         node->visited = true;
         
         int64_t next_cost = cost + 1;   // Cost to move to the next node
-        int64_t min_cost = INT64_MAX;   // Smallest cost among all node's exits
-        MountainNode *best_exit = NULL; // Exit with the smallest cost
         
         // Check the exits and update their costs
         for (size_t i = 0; i < 4; i++)
@@ -225,25 +224,20 @@ static void pathfind_dijkstra(MountainMap *mountain)
                 {
                     exit->total_cost = next_cost;
                 }
-                
-                // Check if the exit has the minimum cost so far
-                if (cost < min_cost)
-                {
-                    min_cost = cost;
-                    best_exit = exit;
-                }
+
+                // Add the exit node to the known nodes
+                MountainPath *seen = new_path_node();
+                seen->node = exit;
+                seen->previous = last_seen;
+                last_seen->next = seen;
             }
         }
 
-        // Check if there is any unvisited exit
-        if (best_exit)
-        {
-            
-        }
-        else
-        {
-            
-        }
+        // Choice of the best exit among the known nodes
+        int64_t min_cost = INT64_MAX;   // Smallest cost among all node's exits
+        MountainNode *best_exit = NULL; // Exit with the smallest cost
+        
+        /* Work in progres... */
     }
 
     mountain->total_cost = cost;
