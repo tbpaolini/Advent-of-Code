@@ -22,20 +22,22 @@ typedef struct MountainNode
     bool visited;                   // Whether this node has been visited already
 } MountainNode;
 
+typedef struct MountainPath
+{
+    struct MountainNode *node;      // Current node on the path
+    struct MountainPath *next;      // Next node on the path
+    struct MountainPath *previous;  // Previous node on the path
+} MountainPath;
+
 typedef struct MountainMap
 {
     struct MountainNode **map;      // A 2-D array that represents the terrain map: map[row][column]
     struct MountainCoord max;       // Maximum indices on tha map array (y = row; x = column)
     struct MountainNode *start;     // Staring node
-    struct MountainNode *current;   // Current node
     struct MountainNode *end;       // Destination node
     int64_t steps;                  // How many steps the path has
     int64_t total_cost;             // The total cost of the path
-    struct
-    {
-        struct MountainNode *current;   // Current node on the path
-        struct MountainNode *next;      // Next node on the path
-    } path; // Path from the start to the end
+    MountainPath *path;             // Path from the start to the end
 } MountainMap;
 
 // Allocate memory on the heap for a 2-dimensional array
@@ -176,6 +178,98 @@ static void map_populate(MountainMap *empty_map, char **elevations)
             }
         }
     }
+}
+
+static MountainPath* new_path_node()
+{
+    MountainPath *path = calloc(1, sizeof(MountainPath));
+    if (!path)
+    {
+        fprintf(stderr, "Error: No enough memory.\n");
+        abort();
+    }
+    return path;
+}
+
+static void pathfind_dijkstra(MountainMap *mountain)
+{
+    // Starting position
+    MountainNode *node = mountain->start;
+    MountainPath *path = new_path_node();
+    int64_t cost = 0;
+    
+    // Keep track of current position on the path
+    MountainPath *position = path;
+    position->node = node;
+
+    // Move through the mountain until the destination node is reached
+    while (node != mountain->end)
+    {
+        // Mark the node as 'visited'
+        node->visited = true;
+        
+        cost++;                         // Moving to a node increases the cost by one
+        int64_t min_cost = INT64_MAX;   // Smallest cost among all node's exits
+        MountainNode *next_node = NULL; // Exit with the smallest cost
+        
+        // Check the exits and update their costs
+        MountainNode *exit = NULL;
+        for (size_t i = 0; i < 4; i++)
+        {
+            exit = node->exits[i];
+            if (exit)
+            {
+                // Skip the exit if it has already been visited
+                if (exit->visited) continue;
+                
+                // Update the minimum cost to the exit
+                if (exit->total_cost > cost)
+                {
+                    exit->total_cost = cost;
+                }
+                
+                // Check if the exit has the minimum cost so far
+                if (cost < min_cost)
+                {
+                    min_cost = cost;
+                    next_node = exit;
+                }
+            }
+        }
+
+        // Check if there is any unvisited exit
+        if (next_node)
+        {
+            // There is an exit: move to it
+            
+            // Add the next position on the path
+            MountainPath *next_position = new_path_node();
+            next_position->node = next_node;
+            next_position->previous = position;
+            position->next = next_position;
+            position = next_position;
+            
+            // Move to the next node
+            node = next_node;
+        }
+        else
+        {
+            // There is not an exit: move to the previous position
+            cost--;
+            
+            // Remove the current step from the node
+            MountainPath *old_position = position;
+            position = position->previous;
+            position->next = NULL;
+            free(old_position);
+
+            // Move to the previous node
+            node = position->node;
+        }
+    }
+
+    mountain->total_cost = cost;
+    mountain->path = path;
 }
 
 int main(int argc, char **argv)
