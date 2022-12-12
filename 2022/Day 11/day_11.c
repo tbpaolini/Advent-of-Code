@@ -166,7 +166,7 @@ static void do_round(
             }
             else
             {
-                fprintf(stderr, "Error: Illegal operation '%c'", current_monkey->operator);
+                fprintf(stderr, "Error: Illegal operation '%c'\n", current_monkey->operator);
                 abort();
             }
 
@@ -175,7 +175,7 @@ static void do_round(
             if (is_part_1) current_item->worry_level /= 3;
 
             // Prevent an integer overflow (relevant for Part 2)
-            current_item->worry_level %= common_multiple;
+            if (!is_part_1) current_item->worry_level %= common_multiple;
 
             // Determine which monkey to give the item to
             Monkey *next_monkey;
