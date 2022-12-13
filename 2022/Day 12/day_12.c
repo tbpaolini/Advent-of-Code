@@ -16,7 +16,7 @@ typedef struct MountainCoord
 typedef struct MountainNode
 {
     struct MountainCoord coord;     // (x, y) coordinates of this node
-    int64_t elevation;              // The cost to get here from the previous node
+    char elevation;                 // The elevation of this node
     int64_t total_cost;             // The total cost to get here from the start
     struct MountainNode *exits[4];  // The nodes this one connects to: {right, top, left, down} (NULL means no exit on a direction)
     struct MountainNode *from;      // Which node we came from while traversing the path
@@ -122,19 +122,19 @@ static void map_populate(MountainMap *empty_map, char **elevations)
             if (islower(elevation))
             {
                 // We are at an intermediate node
-                node->elevation = elevation - 'a';
+                node->elevation = elevation;
             }
             else if (elevation == 'S')
             {
                 // We are at the starting node
-                node->elevation = 0;
+                node->elevation = 'a';
                 node->total_cost = 0;
                 empty_map->start = node;
             }
             else if (elevation == 'E')
             {
                 // We are at the destination node
-                node->elevation = 25;
+                node->elevation = 'z';
                 empty_map->end = node;
             }
             else
