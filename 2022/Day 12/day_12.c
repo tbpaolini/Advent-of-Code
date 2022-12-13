@@ -314,7 +314,7 @@ static void pathfind_dijkstra(MountainMap *mountain)
             node = best_exit->node;
             cost = min_cost;
             fprintf(
-                stdout, "(%ld, %ld) %c -> %c (%ld, %ld) - cost %ld\n",
+                debug, "(%ld, %ld) %c -> %c (%ld, %ld) - cost %ld\n",
                 node->from->coord.x,
                 node->from->coord.y,
                 node->from->elevation,
