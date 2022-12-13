@@ -143,6 +143,16 @@ static void map_populate(MountainMap *empty_map, char **elevations)
                 fprintf(stderr, "Error: Invalid elevation of '%c'\n", elevation);
                 abort();
             }
+        }
+    }
+
+    // Link the nodes to each other
+    for (int64_t y = 0; y < rows; y++)
+    {
+        for (int64_t x = 0; x < columns; x++)
+        {
+            // Get the current node
+            MountainNode *node = &empty_map->map[y][x];
 
             // The coordinates of the exits of this node
             const MountainCoord my_exits[4] = {
@@ -244,6 +254,11 @@ static void pathfind_dijkstra(MountainMap *mountain)
                         unvisited_nodes = seen;
                         last_unvisited_node = seen;
                     }
+                }
+                else
+                {
+                    // Flag the exit as 'seen'
+                    exit->seen = true;
                 }
             }
         }
