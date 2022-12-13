@@ -20,6 +20,7 @@ typedef struct MountainNode
     int64_t total_cost;             // The total cost to get here from the start
     struct MountainNode *exits[4];  // The nodes this one connects to: {right, top, left, down} (NULL means no exit on a direction)
     struct MountainNode *from;      // Which node we came from while traversing the path
+    bool seen;                      // Whether this node has been seen while looking at the exits of another node
     bool visited;                   // Whether this node has been visited already
 } MountainNode;
 
@@ -198,7 +199,8 @@ static void pathfind_dijkstra(MountainMap *mountain)
     int64_t cost = 0;
     
     // List of unvisited nodes
-    MountainPath *unvisited_nodes = NULL;
+    MountainPath *unvisited_nodes = NULL;       // Head of the unvisited list
+    MountainPath *last_unvisited_node = NULL;   // Tail of the unvisited list
 
     // Move through the mountain until the destination node is reached
     while (node != mountain->end)
@@ -221,40 +223,26 @@ static void pathfind_dijkstra(MountainMap *mountain)
                 if (exit->total_cost > next_cost)
                 {
                     exit->total_cost = next_cost;
-                }
-
-                // Check if this exit has already been seen
-                bool seen_before = false;
-                MountainPath *last_node = unvisited_nodes;
-                if (last_node && last_node->next)
-                {
-                    while (last_node->next != NULL)
-                    {
-                        if (last_node->node == exit)
-                        {
-                            seen_before = true;
-                            break;
-                        }
-                        last_node = last_node->next;
-                    }
+                    exit->from = node;
                 }
 
                 // Add the exit node to the known nodes
                 // (if this is the first time it is seen)
-                if (!seen_before)
+                if (!exit->seen)
                 {
                     MountainPath *seen = new_path_node();
                     seen->node = exit;
-                    seen->previous = last_node;
-                    if (last_node)
+                    seen->previous = last_unvisited_node;
+                    if (last_unvisited_node)
                     {
                         // Add the node to the end of the unvisited list
-                        last_node->next = seen;
+                        last_unvisited_node->next = seen;
                     }
                     else
                     {
                         // This is the first node on the unvisited list
                         unvisited_nodes = seen;
+                        last_unvisited_node = seen;
                     }
                 }
             }
@@ -296,12 +284,18 @@ static void pathfind_dijkstra(MountainMap *mountain)
             {
                 unvisited_nodes = unvisited_nodes->next;
             }
+
+            // Move the tail of the unvisited list if
+            // the removed node is the last on the list
+            if (best_exit == last_unvisited_node)
+            {
+                last_unvisited_node = last_unvisited_node->previous;
+            }
             
             // Move to the currently best node
-            printf("(%ld, %ld) -> ", node->coord.x, node->coord.y);
             node = best_exit->node;
             cost = min_cost;
-            printf("(%ld, %ld) - cost %ld\n", node->coord.x, node->coord.y, cost);
+            printf("(%ld, %ld) -> (%ld, %ld) - cost %ld\n", node->from->coord.x, node->from->coord.y, node->coord.x, node->coord.y, cost);
             free(best_exit);
         }
         else
