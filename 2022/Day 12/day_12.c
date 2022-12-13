@@ -7,12 +7,14 @@
 #include <stddef.h>
 #include <assert.h>
 
+// Coordinates of a node
 typedef struct MountainCoord
 {
     int64_t x;
     int64_t y;
 } MountainCoord;
 
+// A node on the map
 typedef struct MountainNode
 {
     struct MountainCoord coord;     // (x, y) coordinates of this node
@@ -24,21 +26,22 @@ typedef struct MountainNode
     bool visited;                   // Whether this node has been visited already
 } MountainNode;
 
-typedef struct MountainPath
+// List of nodes
+typedef struct MountainList
 {
     struct MountainNode *node;      // Current node on the path
-    struct MountainPath *next;      // Next node on the path
-    struct MountainPath *previous;  // Previous node on the path
-} MountainPath;
+    struct MountainList *next;      // Next node on the path
+    struct MountainList *previous;  // Previous node on the path
+} MountainList;
 
+// Group of the information about all nodes in the mountain
 typedef struct MountainMap
 {
     struct MountainNode **map;      // A 2-D array that represents the terrain map: map[row][column]
     struct MountainCoord max;       // Maximum indices on tha map array (y = row; x = column)
     struct MountainNode *start;     // Staring node
     struct MountainNode *end;       // Destination node
-    int64_t total_cost;             // The total cost of the path
-    MountainPath *path;             // Path from the start to the end
+    int64_t total_cost;             // The total cost of the optimum path
 } MountainMap;
 
 // Allocate memory on the heap for a 2-dimensional array
@@ -192,9 +195,9 @@ static void map_populate(MountainMap *empty_map, char **elevations)
     }
 }
 
-static MountainPath* new_path_node()
+static MountainList* new_path_node()
 {
-    MountainPath *path = calloc(1, sizeof(MountainPath));
+    MountainList *path = calloc(1, sizeof(MountainList));
     if (!path)
     {
         fprintf(stderr, "Error: No enough memory.\n");
@@ -204,12 +207,12 @@ static MountainPath* new_path_node()
 }
 
 // Free the memory used by a path (should be called on the first item of the list)
-static void path_destroy(MountainPath *path)
+static void path_destroy(MountainList *path)
 {
-    MountainPath *node = path;
+    MountainList *node = path;
     while (node)
     {
-        MountainPath *next_node = node->next;
+        MountainList *next_node = node->next;
         free(node);
         node = next_node;
     }
@@ -219,10 +222,12 @@ static void path_destroy(MountainPath *path)
 static void map_destroy(MountainMap *mountain)
 {
     free(mountain->map);
-    free(mountain->path);
     free(mountain);
 }
 
+// Uses the Dijkstra's algorithm to find the optimal path between the start and end
+// Note: The results are stored in the MountainMap struct given to the function.
+//       The optimal amount of steps is stored on the element '.total_cost' of the struct.
 static void pathfind_dijkstra(MountainMap *mountain)
 {
     // Starting position
@@ -230,10 +235,12 @@ static void pathfind_dijkstra(MountainMap *mountain)
     int64_t cost = 0;
     
     // List of unvisited nodes
-    MountainPath *unvisited_nodes = NULL;       // Head of the unvisited list
-    MountainPath *last_unvisited_node = NULL;   // Tail of the unvisited list
+    MountainList *unvisited_nodes = NULL;       // Head of the unvisited list
+    MountainList *last_unvisited_node = NULL;   // Tail of the unvisited list
 
-    FILE *debug = fopen("debug.txt", "wt");
+    #ifdef _DEBUG
+        FILE *debug = fopen("debug.txt", "wt");
+    #endif
 
     // Move through the mountain until the destination node is reached
     while (node != mountain->end)
@@ -265,7 +272,7 @@ static void pathfind_dijkstra(MountainMap *mountain)
                 // (if this is the first time it is seen)
                 if (!exit->seen)
                 {
-                    MountainPath *seen = new_path_node();
+                    MountainList *seen = new_path_node();
                     seen->node = exit;
                     seen->previous = last_unvisited_node;
                     if (last_unvisited_node)
@@ -289,9 +296,9 @@ static void pathfind_dijkstra(MountainMap *mountain)
 
         // Choice of the best exit among the known nodes
         int64_t min_cost = INT64_MAX;   // Smallest cost among all known node's exits
-        MountainPath *best_exit = NULL; // Exit with the smallest cost
+        MountainList *best_exit = NULL; // Exit with the smallest cost
         
-        MountainPath *next_node = unvisited_nodes;
+        MountainList *next_node = unvisited_nodes;
         while (next_node)
         {
             int64_t node_cost = next_node->node->total_cost;
@@ -334,16 +341,19 @@ static void pathfind_dijkstra(MountainMap *mountain)
             // Move to the currently best node
             node = best_exit->node;
             cost = min_cost;
-            fprintf(
-                debug, "(%ld, %ld) %c -> %c (%ld, %ld) - cost %ld\n",
-                node->from->coord.x,
-                node->from->coord.y,
-                node->from->elevation,
-                node->elevation,
-                node->coord.x,
-                node->coord.y, cost
-            );
             free(best_exit);
+            
+            #ifdef _DEBUG
+                fprintf(
+                    debug, "(%ld, %ld) %c -> %c (%ld, %ld) - cost %ld\n",
+                    node->from->coord.x,
+                    node->from->coord.y,
+                    node->from->elevation,
+                    node->elevation,
+                    node->coord.x,
+                    node->coord.y, cost
+                );
+            #endif
         }
         else
         {
@@ -353,9 +363,12 @@ static void pathfind_dijkstra(MountainMap *mountain)
 
     }
 
-    path_destroy(unvisited_nodes);
-    mountain->total_cost = cost;
-    fclose(debug);
+    path_destroy(unvisited_nodes);  // Clear the list of unvisited nodes
+    mountain->total_cost = cost;    // Store the optimal cost
+
+    #ifdef _DEBUG
+        fclose(debug);
+    #endif
 }
 
 // Reset the pathfinding data on the MountainMap struct
@@ -374,7 +387,6 @@ void map_reset(MountainMap *mountain)
     }
     
     mountain->start->total_cost = 0;
-    free(mountain->path);
 }
 
 int main(int argc, char **argv)
@@ -385,6 +397,7 @@ int main(int argc, char **argv)
     size_t rows = 0;
     size_t columns = 0;
 
+    // Determine the amount of rows and columns on the map
     while (fgets(line, sizeof(line), input))
     {
         rows++;
@@ -417,27 +430,43 @@ int main(int argc, char **argv)
 
     fclose(input);
 
+    /******************** Part 1 ********************/
+    
+    // Create a new map
     MountainMap *mountain_p1 = map_create_empty(columns, rows);
     map_populate(mountain_p1, (char**)raw_map);
+    
+    // Find the optimal path between the start and the end
     pathfind_dijkstra(mountain_p1);
+    printf("Part 1: %ld steps\n", mountain_p1->total_cost);
     map_destroy(mountain_p1);
 
+    /******************** Part 2 ********************/
+
+    // Create another map
     int64_t min_steps = INT64_MAX;
     MountainMap* mountain_p2 = map_create_empty(columns, rows);
     map_populate(mountain_p2, (char**)raw_map);
     
+    // Loop throuh all elevations in the mountain
     for (size_t y = 0; y < rows; y++)
     {
         for (size_t x = 0; x < columns; x++)
         {
+            // If the current elevation is not 'a', move to the next
             const char elevation = raw_map[y][x];
             if (elevation != 'a') continue;
+
+            // Set the starting point to the current position
             mountain_p2->start->total_cost = INT64_MAX;
             mountain_p2->start = &mountain_p2->map[y][x];
             mountain_p2->map[y][x].total_cost = 0;
             map_reset(mountain_p2);
+
+            // Find the optimal path from the current position
             pathfind_dijkstra(mountain_p2);
             
+            // Check if the amount of steps is the minimum so far
             if (mountain_p2->total_cost != 0 && mountain_p2->total_cost < min_steps)
             {
                 min_steps = mountain_p2->total_cost;
@@ -446,9 +475,9 @@ int main(int argc, char **argv)
     }
 
     map_destroy(mountain_p2);
-    printf("%ld\n", min_steps);
-    
     free(raw_map);
+    
+    printf("Part 2: %ld steps\n", min_steps);
     
     return 0;
 }
