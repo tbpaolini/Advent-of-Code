@@ -217,6 +217,8 @@ static void pathfind_dijkstra(MountainMap *mountain)
     // Move through the mountain until the destination node is reached
     while (node != mountain->end)
     {
+        // assert(!node->visited);
+
         // Mark the node as 'visited'
         node->visited = true;
         
@@ -257,9 +259,7 @@ static void pathfind_dijkstra(MountainMap *mountain)
                         unvisited_nodes = seen;
                         last_unvisited_node = seen;
                     }
-                }
-                else
-                {
+
                     // Flag the exit as 'seen'
                     exit->seen = true;
                 }
@@ -314,7 +314,7 @@ static void pathfind_dijkstra(MountainMap *mountain)
             node = best_exit->node;
             cost = min_cost;
             fprintf(
-                debug, "(%ld, %ld) %c -> %c (%ld, %ld) - cost %ld\n",
+                stdout, "(%ld, %ld) %c -> %c (%ld, %ld) - cost %ld\n",
                 node->from->coord.x,
                 node->from->coord.y,
                 node->from->elevation,
