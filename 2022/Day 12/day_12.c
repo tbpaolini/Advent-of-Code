@@ -313,7 +313,15 @@ static void pathfind_dijkstra(MountainMap *mountain)
             // Move to the currently best node
             node = best_exit->node;
             cost = min_cost;
-            fprintf(debug, "(%ld, %ld) -> (%ld, %ld) - cost %ld\n", node->from->coord.x, node->from->coord.y, node->coord.x, node->coord.y, cost);
+            fprintf(
+                debug, "(%ld, %ld) %c -> %c (%ld, %ld) - cost %ld\n",
+                node->from->coord.x,
+                node->from->coord.y,
+                node->from->elevation,
+                node->elevation,
+                node->coord.x,
+                node->coord.y, cost
+            );
             free(best_exit);
         }
         else
