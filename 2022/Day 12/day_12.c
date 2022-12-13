@@ -358,6 +358,25 @@ static void pathfind_dijkstra(MountainMap *mountain)
     fclose(debug);
 }
 
+// Reset the pathfinding data on the MountainMap struct
+// (costs are set to 'infinity', optimal path is cleared, all nodes marked as 'unvisited')
+void map_reset(MountainMap *mountain)
+{
+    for (size_t y = 0; y <= mountain->max.y; y++)
+    {
+        for (size_t x = 0; x <= mountain->max.x; x++)
+        {
+            mountain->map[y][x].total_cost = INT64_MAX;
+            mountain->map[y][x].from = NULL;
+            mountain->map[y][x].visited = false;
+            mountain->map[y][x].seen = false;
+        }
+    }
+    
+    mountain->start->total_cost = 0;
+    free(mountain->path);
+}
+
 int main(int argc, char **argv)
 {
     FILE *input = fopen("input.txt", "rt");
@@ -404,7 +423,8 @@ int main(int argc, char **argv)
     map_destroy(mountain_p1);
 
     int64_t min_steps = INT64_MAX;
-    MountainMap* mountain_p2;
+    MountainMap* mountain_p2 = map_create_empty(columns, rows);
+    map_populate(mountain_p2, (char**)raw_map);
     
     for (size_t y = 0; y < rows; y++)
     {
@@ -412,22 +432,20 @@ int main(int argc, char **argv)
         {
             const char elevation = raw_map[y][x];
             if (elevation != 'a') continue;
-            mountain_p2 = map_create_empty(columns, rows);
-            map_populate(mountain_p2, (char**)raw_map);
-
             mountain_p2->start->total_cost = INT64_MAX;
             mountain_p2->start = &mountain_p2->map[y][x];
             mountain_p2->map[y][x].total_cost = 0;
+            map_reset(mountain_p2);
             pathfind_dijkstra(mountain_p2);
             
             if (mountain_p2->total_cost != 0 && mountain_p2->total_cost < min_steps)
             {
                 min_steps = mountain_p2->total_cost;
             }
-            map_destroy(mountain_p2);
         }
     }
 
+    map_destroy(mountain_p2);
     printf("%ld\n", min_steps);
     
     free(raw_map);
