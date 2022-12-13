@@ -80,6 +80,7 @@ static void** allocate_2Darray(size_t width, size_t height, size_t element_size)
 }
 
 // Create an empty MountainMap struct
+// Note: it should be freed with 'map_destroy()'
 static MountainMap* map_create_empty(size_t width, size_t height)
 {
     // Allocate a memory region for the map (initialized to 0)
@@ -200,6 +201,26 @@ static MountainPath* new_path_node()
         abort();
     }
     return path;
+}
+
+// Free the memory used by a path (should be called on the first item of the list)
+static void path_destroy(MountainPath *path)
+{
+    MountainPath *node = path;
+    while (node)
+    {
+        MountainPath *next_node = node->next;
+        free(node);
+        node = next_node;
+    }
+}
+
+// Free the memory used by the MountainMap struct
+static void map_destroy(MountainMap *mountain)
+{
+    free(mountain->map);
+    free(mountain->path);
+    free(mountain);
 }
 
 static void pathfind_dijkstra(MountainMap *mountain)
@@ -332,6 +353,7 @@ static void pathfind_dijkstra(MountainMap *mountain)
 
     }
 
+    path_destroy(unvisited_nodes);
     mountain->total_cost = cost;
     fclose(debug);
 }
@@ -379,6 +401,20 @@ int main(int argc, char **argv)
     MountainMap *mountain_p1 = map_create_empty(columns, rows);
     map_populate(mountain_p1, (char**)raw_map);
     pathfind_dijkstra(mountain_p1);
+    map_destroy(mountain_p1);
+
+    int64_t min_steps;
+    
+    for (size_t y = 0; y < rows; y++)
+    {
+        for (size_t x = 0; x < columns; x++)
+        {
+            const char elevation = raw_map[y][x];
+            if (elevation != 'a') continue;
+        }
+    }
+    
+    free(raw_map);
     
     return 0;
 }
