@@ -212,6 +212,8 @@ static void pathfind_dijkstra(MountainMap *mountain)
     MountainPath *unvisited_nodes = NULL;       // Head of the unvisited list
     MountainPath *last_unvisited_node = NULL;   // Tail of the unvisited list
 
+    FILE *debug = fopen("debug.txt", "wt");
+
     // Move through the mountain until the destination node is reached
     while (node != mountain->end)
     {
@@ -247,6 +249,7 @@ static void pathfind_dijkstra(MountainMap *mountain)
                     {
                         // Add the node to the end of the unvisited list
                         last_unvisited_node->next = seen;
+                        last_unvisited_node = seen;
                     }
                     else
                     {
@@ -310,7 +313,7 @@ static void pathfind_dijkstra(MountainMap *mountain)
             // Move to the currently best node
             node = best_exit->node;
             cost = min_cost;
-            printf("(%ld, %ld) -> (%ld, %ld) - cost %ld\n", node->from->coord.x, node->from->coord.y, node->coord.x, node->coord.y, cost);
+            fprintf(debug, "(%ld, %ld) -> (%ld, %ld) - cost %ld\n", node->from->coord.x, node->from->coord.y, node->coord.x, node->coord.y, cost);
             free(best_exit);
         }
         else
@@ -318,14 +321,16 @@ static void pathfind_dijkstra(MountainMap *mountain)
             fprintf(stderr, "Error: No path exists between the start and end\n");
             abort();
         }
+
     }
 
     mountain->total_cost = cost;
+    fclose(debug);
 }
 
 int main(int argc, char **argv)
 {
-    FILE *input = fopen("test.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char line[128];
 
     size_t rows = 0;
