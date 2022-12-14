@@ -97,12 +97,11 @@ static Packet* packet_parse(char *line)
 {
     // Get the number of elements on top level of the list
     size_t length = packet_length(line);
-    if (length == 0) return NULL;
     
     // Allocate memory for the top level list
     Packet *packet = calloc(1, sizeof(Packet));
-    PacketValue *value_array = (PacketValue*)calloc(length, sizeof(PacketValue));
-    if (!value_array || !packet)
+    PacketValue *value_array = length > 0 ? (PacketValue*)calloc(length, sizeof(PacketValue)) : NULL;
+    if (!packet || (!value_array && length > 0))
     {
         fprintf(stderr, "Error: No enough memory\n");
         abort();
@@ -113,6 +112,9 @@ static Packet* packet_parse(char *line)
         .array = value_array,
         .size = length
     };
+
+    // Return an packet with length zero, if it contains no elements
+    if (length == 0) return packet;
     
     int64_t depth = -1;     // Current depth on the nested list
     size_t char_index = 0;  // Index of the current character
@@ -205,7 +207,7 @@ static int packet_compare(Packet *packet_1, Packet *packet_2)
         PacketValue *value_1 = &packet_1->array[i];
         PacketValue *value_2 = &packet_2->array[i];
 
-        int comparison_type = (int)(value_1->is_list) + (int)(value_1->is_list);
+        int comparison_type = (int)(value_1->is_list) + (int)(value_2->is_list);
 
         switch (comparison_type)
         {
@@ -262,7 +264,20 @@ static int packet_compare(Packet *packet_1, Packet *packet_2)
         }
     }
 
-    return result;
+    // If we ran out of elements on a list before a inequality was found,
+    // then the list size is the "tiebreaker"
+    if (packet_1->size == packet_2->size )
+    {
+        return 0;
+    }
+    else if (packet_1->size < packet_2->size)
+    {
+        return -1;
+    }
+    else
+    {
+        return 1;
+    }
 }
 
 int main(int argc, char **argv)
@@ -296,7 +311,7 @@ int main(int argc, char **argv)
 
     for (size_t i = 0; i < packet_count; i += 2)
     {
-        /* code */
+        packet_compare(packet_array[i], packet_array[i+1]);
     }
     
     free(packet_array);
