@@ -8,22 +8,26 @@
 #include <assert.h>
 
 
+// Main struct to store the values of a packer
 typedef struct Packet
 {
-    struct PacketValue *array;
-    size_t size;
+    struct PacketValue *array;  // Array of the packet's values
+    size_t size;                // Amount of elements on the array
 } Packet;
 
+// Wrapper for a value in a packet
+// Can store either an integer directly, or a pointer to another packet (in case of nested packets)
 typedef union PacketWrapper
 {
-    int64_t integer;
-    struct Packet *list;
+    int64_t integer;        // Integer value
+    struct Packet *list;    // Nested packet
 } PacketWrapper;
 
+// A value inside a packet
 typedef struct PacketValue
 {
-    union PacketWrapper value;
-    bool is_list;
+    union PacketWrapper value;  // An integer value or a nested packet
+    bool is_list;               // If true, the value is a nested packet. Otherwise, an integer.
 } PacketValue;
 
 // Calculate the length
@@ -191,9 +195,15 @@ static Packet* packet_parse(char *line)
     abort();
 }
 
+// Compare two packets and return:
+// +1: if packet_1 >  packet_2
+//  0: if packet_1 == packet_2
+// -1: if packet_1 <  packet_2
 static int packet_compare(Packet *packet_1, Packet *packet_2)
 {
     int result = 0;
+
+    // Check the minimum length among the two packets
     size_t min_size = packet_1->size < packet_2->size ? packet_1->size : packet_2->size;
 
     // Allocate memory on the stack for the temporary list
@@ -201,27 +211,31 @@ static int packet_compare(Packet *packet_1, Packet *packet_2)
     static Packet temp_packet;
     static PacketValue temp_value;
     
+    // Loop through the elements pairwise until at least one list run out of elements
     for (size_t i = 0; i < min_size; i++)
     {
         
+        // The pair of values (one from each packet)
         PacketValue *value_1 = &packet_1->array[i];
         PacketValue *value_2 = &packet_2->array[i];
 
+        // How many of the elements are lists
         int comparison_type = (int)(value_1->is_list) + (int)(value_2->is_list);
 
         switch (comparison_type)
         {
-            case 0:
+            case 0: // Both elements are integers
                 const int64_t int_1 = value_1->value.integer;
                 const int64_t int_2 = value_2->value.integer;
-                if (int_1 == int_2) continue;
+                if (int_1 == int_2) continue;   // Directly compare the values
                 return int_1 < int_2 ? -1 : 1;
                 break;
             
-            case 1:
+            case 1: // One element is integer and the other a list
                 PacketValue *list_value;
                 PacketValue *int_value;
                 
+                // Check the type of each one
                 if (value_1->is_list)
                 {
                     list_value = value_1;
@@ -233,6 +247,7 @@ static int packet_compare(Packet *packet_1, Packet *packet_2)
                     int_value  = value_1;
                 }
                 
+                // Turn the integer into a list of one element
                 temp_value = (PacketValue){
                     .value.integer = int_value->value.integer,
                     .is_list = false
@@ -243,6 +258,7 @@ static int packet_compare(Packet *packet_1, Packet *packet_2)
                     .size = 1
                 };
 
+                // Retry the comparison with the integer as a list
                 if (list_value == value_1)
                 {
                     result = packet_compare(list_value->value.list, &temp_packet);
@@ -255,10 +271,10 @@ static int packet_compare(Packet *packet_1, Packet *packet_2)
                 if (result != 0) return result;
                 break;
             
-            case 2:
+            case 2: // Both elements are lists
                 Packet *list_1 = value_1->value.list;
                 Packet *list_2 = value_2->value.list;
-                result = packet_compare(list_1, list_2);
+                result = packet_compare(list_1, list_2);    // Recursively compare the lists
                 if (result != 0) return result;
                 break;
         }
@@ -282,7 +298,7 @@ static int packet_compare(Packet *packet_1, Packet *packet_2)
 
 int main(int argc, char **argv)
 {
-    FILE *input = fopen("test.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char line[256];
     size_t packet_count = 0;
 
