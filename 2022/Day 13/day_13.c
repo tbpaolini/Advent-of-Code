@@ -282,7 +282,7 @@ static int packet_compare(Packet *packet_1, Packet *packet_2)
 
 int main(int argc, char **argv)
 {
-    FILE *input = fopen("input.txt", "rt");
+    FILE *input = fopen("test.txt", "rt");
     char line[256];
     size_t packet_count = 0;
 
@@ -309,10 +309,13 @@ int main(int argc, char **argv)
 
     fclose(input);
 
+    size_t count = 0;
     for (size_t i = 0; i < packet_count; i += 2)
     {
-        packet_compare(packet_array[i], packet_array[i+1]);
+        int result = packet_compare(packet_array[i], packet_array[i+1]);
+        if (result == -1) count += (i / 2) + 1;
     }
     
+    printf("%lu\n", count);
     free(packet_array);
 }
