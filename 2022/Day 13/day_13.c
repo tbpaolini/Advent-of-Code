@@ -92,7 +92,8 @@ static size_t packet_length(char *line)
     }
 }
 
-static Packet* parse_line(char *line)
+// Parse a packet from a line of the input file
+static Packet* packet_parse(char *line)
 {
     // Get the number of elements on top level of the list
     size_t length = packet_length(line);
@@ -132,7 +133,7 @@ static Packet* parse_line(char *line)
                 if (depth == 1)
                 {
                     // Parse the nested list, then add it to its parent
-                    Packet *nested_packet = parse_line(&line[char_index-1]);
+                    Packet *nested_packet = packet_parse(&line[char_index-1]);
                     value_array[list_index++] = (PacketValue){
                         .value.list = nested_packet,
                         .is_list = true
@@ -188,6 +189,82 @@ static Packet* parse_line(char *line)
     abort();
 }
 
+static int packet_compare(Packet *packet_1, Packet *packet_2)
+{
+    int result = 0;
+    size_t min_size = packet_1->size < packet_2->size ? packet_1->size : packet_2->size;
+
+    // Allocate memory on the stack for the temporary list
+    // (used to convert an integer into a list, when the compared types are different)
+    static Packet temp_packet;
+    static PacketValue temp_value;
+    
+    for (size_t i = 0; i < min_size; i++)
+    {
+        
+        PacketValue *value_1 = &packet_1->array[i];
+        PacketValue *value_2 = &packet_2->array[i];
+
+        int comparison_type = (int)(value_1->is_list) + (int)(value_1->is_list);
+
+        switch (comparison_type)
+        {
+            case 0:
+                const int64_t int_1 = value_1->value.integer;
+                const int64_t int_2 = value_2->value.integer;
+                if (int_1 == int_2) continue;
+                return int_1 < int_2 ? -1 : 1;
+                break;
+            
+            case 1:
+                PacketValue *list_value;
+                PacketValue *int_value;
+                
+                if (value_1->is_list)
+                {
+                    list_value = value_1;
+                    int_value  = value_2;
+                }
+                else
+                {
+                    list_value = value_2;
+                    int_value  = value_1;
+                }
+                
+                temp_value = (PacketValue){
+                    .value.integer = int_value->value.integer,
+                    .is_list = false
+                };
+
+                temp_packet = (Packet){
+                    .array = &temp_value,
+                    .size = 1
+                };
+
+                if (list_value == value_1)
+                {
+                    result = packet_compare(list_value->value.list, &temp_packet);
+                }
+                else
+                {
+                    result = packet_compare(&temp_packet, list_value->value.list);
+                }
+                
+                if (result != 0) return result;
+                break;
+            
+            case 2:
+                Packet *list_1 = value_1->value.list;
+                Packet *list_2 = value_2->value.list;
+                result = packet_compare(list_1, list_2);
+                if (result != 0) return result;
+                break;
+        }
+    }
+
+    return result;
+}
+
 int main(int argc, char **argv)
 {
     FILE *input = fopen("input.txt", "rt");
@@ -212,7 +289,14 @@ int main(int argc, char **argv)
     while (fgets(line, sizeof(line), input))
     {
         if (line[0] == '\n') continue;
-        packet_array[packet_index++] = (Packet*)parse_line(line);
+        packet_array[packet_index++] = (Packet*)packet_parse(line);
+    }
+
+    fclose(input);
+
+    for (size_t i = 0; i < packet_count; i += 2)
+    {
+        /* code */
     }
     
     free(packet_array);
