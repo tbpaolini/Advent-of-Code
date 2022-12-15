@@ -91,5 +91,19 @@ int main(int argc, char **argv)
 
     fclose(input);
 
+    WallCoordinates *current_wall = coord_head;
+    CaveCoordinate max = {current_wall->start.x, current_wall->start.y};
+    CaveCoordinate min = {current_wall->start.x, current_wall->start.y};
+
+    while (current_wall)
+    {
+        CaveCoordinate current = current_wall->end;
+        if (current.x > max.x) max.x = current.x;
+        if (current.y > max.y) max.y = current.y;
+        if (current.x < min.x) min.x = current.x;
+        if (current.y < min.y) min.y = current.y;
+        current_wall = current_wall->next;
+    }
+
     return 0;
 }
