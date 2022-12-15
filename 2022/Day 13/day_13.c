@@ -296,6 +296,15 @@ static int packet_compare(Packet *packet_1, Packet *packet_2)
     }
 }
 
+// Helper function for sorting an array of packet pointers
+// Note: A pointer to this function should be passed to 'qsort()'.
+static int packet_sorter(const void* packet_1, const void* packet_2)
+{
+    Packet *p1 = *(Packet**)packet_1;
+    Packet *p2 = *(Packet**)packet_2;
+    return packet_compare(p1, p2);
+}
+
 int main(int argc, char **argv)
 {
     FILE *input = fopen("input.txt", "rt");
@@ -309,7 +318,7 @@ int main(int argc, char **argv)
 
     rewind(input);
 
-    Packet **packet_array = (Packet**)calloc(packet_count, sizeof(Packet*));
+    Packet **packet_array = (Packet**)calloc(packet_count + 2, sizeof(Packet*));
     if (!packet_array)
     {
         fprintf(stderr, "Error: No enough memory\n");
@@ -331,7 +340,31 @@ int main(int argc, char **argv)
         int result = packet_compare(packet_array[i], packet_array[i+1]);
         if (result == -1) count += (i / 2) + 1;
     }
-    
+
     printf("%lu\n", count);
+    
+    char divider_text_1[] = "[[2]]\n";
+    char divider_text_2[] = "[[6]]\n";
+
+    Packet *divider_packet_1 = packet_parse(divider_text_1);
+    Packet *divider_packet_2 = packet_parse(divider_text_2);
+
+    packet_array[packet_index++] = divider_packet_1;
+    packet_array[packet_index++] = divider_packet_2;
+
+    qsort(packet_array, packet_count+2, sizeof(Packet*), &packet_sorter);
+
+    size_t count_p2 = 1;
+    for (size_t i = 0; i < packet_count+2; i++)
+    {
+        Packet *packet = packet_array[i];
+        if (packet == divider_packet_1 || packet == divider_packet_2)
+        {
+            count_p2 *= (i + 1);
+        }
+    }
+
+    printf("%lu\n", count_p2);
+    
     free(packet_array);
 }
