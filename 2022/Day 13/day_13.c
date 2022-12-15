@@ -305,12 +305,28 @@ static int packet_sorter(const void* packet_1, const void* packet_2)
     return packet_compare(p1, p2);
 }
 
+// Recursively free the memory used by a packet and its children
+void packet_destroy(Packet *packet)
+{
+    for (size_t i = 0; i < packet->size; i++)
+    {
+        if (packet->array[i].is_list)
+        {
+            packet_destroy(packet->array[i].value.list);
+        }
+    }
+    
+    free(packet->array);
+    free(packet);
+}
+
 int main(int argc, char **argv)
 {
     FILE *input = fopen("input.txt", "rt");
     char line[256];
     size_t packet_count = 0;
 
+    // Count the amount of packets
     while (fgets(line, sizeof(line), input))
     {
         if (line[0] == '[') packet_count++;
@@ -318,6 +334,8 @@ int main(int argc, char **argv)
 
     rewind(input);
 
+    // Allocate memory for an array of packet pointers
+    // (size is the packet count plus 2 in order to account for the divider packets)
     Packet **packet_array = (Packet**)calloc(packet_count + 2, sizeof(Packet*));
     if (!packet_array)
     {
@@ -325,6 +343,7 @@ int main(int argc, char **argv)
         abort();
     }
 
+    // Parse the input file
     size_t packet_index = 0;
     while (fgets(line, sizeof(line), input))
     {
@@ -334,15 +353,18 @@ int main(int argc, char **argv)
 
     fclose(input);
 
-    size_t count = 0;
+    // Compare the pairs of packets
+    size_t solution_p1 = 0;
     for (size_t i = 0; i < packet_count; i += 2)
     {
+        // Add the pair's index to the result, if the first packet is smaller than the second
         int result = packet_compare(packet_array[i], packet_array[i+1]);
-        if (result == -1) count += (i / 2) + 1;
+        if (result == -1) solution_p1 += (i / 2) + 1;
     }
 
-    printf("%lu\n", count);
+    printf("Part 1: %lu\n", solution_p1);
     
+    // Append the two divider packets to the end of the array
     char divider_text_1[] = "[[2]]\n";
     char divider_text_2[] = "[[6]]\n";
 
@@ -352,19 +374,30 @@ int main(int argc, char **argv)
     packet_array[packet_index++] = divider_packet_1;
     packet_array[packet_index++] = divider_packet_2;
 
+    // Sort the packet array in ascending order
     qsort(packet_array, packet_count+2, sizeof(Packet*), &packet_sorter);
 
-    size_t count_p2 = 1;
+    // Find the two divider packets in the sorted array
+    size_t solution_p2 = 1;
     for (size_t i = 0; i < packet_count+2; i++)
     {
         Packet *packet = packet_array[i];
         if (packet == divider_packet_1 || packet == divider_packet_2)
         {
-            count_p2 *= (i + 1);
+            // Multiply the indices of the dividers
+            solution_p2 *= (i + 1);
         }
     }
 
-    printf("%lu\n", count_p2);
+    printf("Part 2: %lu\n", solution_p2);
+
+    // Garbage collection
+    for (size_t i = 0; i < packet_index; i++)
+    {
+        packet_destroy(packet_array[i]);
+    }
     
     free(packet_array);
+
+    return 0;
 }
