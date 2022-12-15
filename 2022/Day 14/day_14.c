@@ -21,7 +21,7 @@ typedef struct WallCoordinates
 
 // Create new wall coordinates
 // Note: should be freed with 'coord_destroy()'
-WallCoordinates* coord_new()
+static WallCoordinates* coord_new()
 {
     WallCoordinates *coord = (WallCoordinates*)calloc(1, sizeof(WallCoordinates));
     if (!coord)
@@ -30,6 +30,15 @@ WallCoordinates* coord_new()
         abort();
     }
     return coord;
+}
+
+// Convert (x, y) corrdinates from the map space to the array space
+static inline CaveCoordinate coord_convert(CaveCoordinate map_coordinate, CaveCoordinate array_origin)
+{
+    return (CaveCoordinate){
+        .x = map_coordinate.x + array_origin.x,
+        .y = map_coordinate.y + array_origin.y
+    };
 }
 
 int main(int argc, char **argv)
@@ -103,6 +112,22 @@ int main(int argc, char **argv)
         if (current.x < min.x) min.x = current.x;
         if (current.y < min.y) min.y = current.y;
         current_wall = current_wall->next;
+    }
+
+    if (max.x < 500) max.x = 500;
+    if (min.y > 0) min.y = 0;
+    
+    int64_t width  = max.x - min.x + 4;
+    int64_t height = max.y - min.y + 2;
+    uint8_t map[height][width];
+    memset(map, 0, sizeof(map));
+
+    CaveCoordinate array_origin = {0 - min.x, 0 - min.y};
+    current_wall = coord_head;
+
+    while (current_wall)
+    {
+        /* code */
     }
 
     return 0;
