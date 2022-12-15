@@ -32,14 +32,23 @@ static WallCoordinates* coord_new()
     return coord;
 }
 
+// The indices on the map array where the (x = 0; y = 0) are
+static CaveCoordinate array_origin;
+
 // Convert (x, y) corrdinates from the map space to the array space
-static inline CaveCoordinate coord_convert(CaveCoordinate map_coordinate, CaveCoordinate array_origin)
+static inline CaveCoordinate coord_convert(CaveCoordinate map_coordinate)
 {
     return (CaveCoordinate){
         .x = map_coordinate.x + array_origin.x,
         .y = map_coordinate.y + array_origin.y
     };
 }
+
+enum {
+    EMPTY = 0,
+    WALL  = 1,
+    SAND  = 2
+};
 
 int main(int argc, char **argv)
 {
@@ -122,13 +131,38 @@ int main(int argc, char **argv)
     uint8_t map[height][width];
     memset(map, 0, sizeof(map));
 
-    CaveCoordinate array_origin = {0 - min.x, 0 - min.y};
+    array_origin = (CaveCoordinate){0 - min.x, 0 - min.y};
     current_wall = coord_head;
 
     while (current_wall)
     {
-        /* code */
+        CaveCoordinate wall_start = coord_convert(current_wall->start); 
+        CaveCoordinate wall_end = coord_convert(current_wall->end);
+
+        for (size_t y = wall_start.y; y <= wall_end.y; y++)
+        {
+            for (size_t x = wall_start.x; x <= wall_end.x; x++)
+            {
+                assert(y < height && x < width);
+                map[y][x] = 1;
+            }
+        }
+        
+        current_wall = current_wall->next;
     }
+
+    #ifdef _DEBUG
+        // Print the map when debugging
+        for (size_t y = 0; y < height; y++)
+        {
+            for (size_t x = 0; x < width; x++)
+            {
+                const char text = map[y][x] ? '#' : '.';
+                putchar(text);
+            }
+            putchar('\n');
+        }
+    #endif
 
     return 0;
 }
