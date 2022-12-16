@@ -68,7 +68,7 @@ enum {
 
 int main(int argc, char **argv)
 {
-    FILE *input = fopen("test.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char line[512];
 
     CaveCoordinate max = {INT64_MIN, INT64_MIN};
@@ -222,5 +222,7 @@ int main(int argc, char **argv)
         if (sand_current.y > max.y) break;
     }
 
+    printf("%lu\n", sand_count);
+    
     return 0;
 }
