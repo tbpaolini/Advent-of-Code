@@ -223,6 +223,35 @@ int main(int argc, char **argv)
     }
 
     printf("%lu\n", sand_count);
+
+    #ifdef _DEBUG
+        // Print the map when debugging
+        for (size_t y = 0; y < height; y++)
+        {
+            for (size_t x = 0; x < width; x++)
+            {
+                char text;
+                if (x == sand_source.x && y == sand_source.y)
+                {
+                    text = '+';
+                }
+                else if (map[y][x] == EMPTY)
+                {
+                    text = '.';
+                }
+                else if (map[y][x] == SAND)
+                {
+                    text = 'o';
+                }
+                else if (map[y][x] == WALL)
+                {
+                    text = '#';
+                }
+                putchar(text);
+            }
+            putchar('\n');
+        }
+    #endif
     
     return 0;
 }
