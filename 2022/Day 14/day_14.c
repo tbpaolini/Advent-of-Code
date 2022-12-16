@@ -67,6 +67,7 @@ enum {
     SOURCE = 3
 };
 
+// Debugging function
 static void map_print(int64_t width, int64_t height, uint8_t map_array[height][width])
 {
     // Print the map when debugging
@@ -174,13 +175,18 @@ int main(int argc, char **argv)
     if (max.x < 500) max.x = 500;
     if (min.y > 0) min.y = 0;
     
-    int64_t width  = max.x - min.x + 1 + 4;
+    int64_t width  = max.x - min.x + 1 + 4 + 2 * max.y;
     int64_t height = max.y - min.y + 1 + 2;
     uint8_t map[height][width];
     memset(map, 0, sizeof(map));
 
-    array_origin = (CaveCoordinate){0 - min.x + 2, 0 - min.y};
+    array_origin = (CaveCoordinate){0 - min.x + 2 + max.y, 0 - min.y};
     current_wall = coord_head;
+
+    for (int64_t x = 0; x < width; x++)
+    {
+        map[max.y+2][x] = WALL;
+    }
 
     while (current_wall)
     {
@@ -206,6 +212,8 @@ int main(int argc, char **argv)
     CaveCoordinate sand_current = sand_source;  // Current position of the sand
     CaveCoordinate sand_previous = sand_source; // Previous position of the sand
     uint64_t sand_count = 0;                    // Amount of sand units so far
+
+    map[sand_source.y][sand_source.x] = SOURCE;
 
     while (true)
     {
@@ -236,10 +244,10 @@ int main(int argc, char **argv)
         {
             map[y][x] = SAND;
             sand_count += 1;
+            if (sand_current.y == sand_source.y) break;
             sand_current = sand_source;
         }
 
-        if (sand_current.y > max.y) break;
     }
 
     printf("%lu\n", sand_count);
