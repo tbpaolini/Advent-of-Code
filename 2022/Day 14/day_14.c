@@ -61,10 +61,44 @@ static inline CaveCoordinate min_coord(CaveCoordinate coord_1, CaveCoordinate co
 }
 
 enum {
-    EMPTY = 0,
-    WALL  = 1,
-    SAND  = 2
+    EMPTY  = 0,
+    WALL   = 1,
+    SAND   = 2,
+    SOURCE = 3
 };
+
+static void map_print(int64_t width, int64_t height, uint8_t map_array[height][width])
+{
+    // Print the map when debugging
+    CaveCoordinate sand_source = {0,0};
+    for (size_t y = 0; y < height; y++)
+    {
+        for (size_t x = 0; x < width; x++)
+        {
+            char text;
+            switch (map_array[y][x])
+            {
+                case EMPTY:
+                    text = '.';
+                    break;
+                
+                case WALL:
+                    text = '#';
+                    break;
+                
+                case SAND:
+                    text = 'o';
+                    break;
+                
+                case SOURCE:
+                    text = '+';
+                    break;
+            }
+            putchar(text);
+        }
+        putchar('\n');
+    }
+}
 
 int main(int argc, char **argv)
 {
@@ -173,20 +207,6 @@ int main(int argc, char **argv)
     CaveCoordinate sand_previous = sand_source; // Previous position of the sand
     uint64_t sand_count = 0;                    // Amount of sand units so far
 
-    #ifdef _DEBUG
-        // Print the map when debugging
-        for (size_t y = 0; y < height; y++)
-        {
-            for (size_t x = 0; x < width; x++)
-            {
-                char text = map[y][x] ? '#' : '.';
-                if (x == sand_source.x && y == sand_source.y) text = '+';
-                putchar(text);
-            }
-            putchar('\n');
-        }
-    #endif
-
     while (true)
     {
         const int64_t x = sand_current.x;
@@ -223,35 +243,6 @@ int main(int argc, char **argv)
     }
 
     printf("%lu\n", sand_count);
-
-    #ifdef _DEBUG
-        // Print the map when debugging
-        for (size_t y = 0; y < height; y++)
-        {
-            for (size_t x = 0; x < width; x++)
-            {
-                char text;
-                if (x == sand_source.x && y == sand_source.y)
-                {
-                    text = '+';
-                }
-                else if (map[y][x] == EMPTY)
-                {
-                    text = '.';
-                }
-                else if (map[y][x] == SAND)
-                {
-                    text = 'o';
-                }
-                else if (map[y][x] == WALL)
-                {
-                    text = '#';
-                }
-                putchar(text);
-            }
-            putchar('\n');
-        }
-    #endif
-    
+       
     return 0;
 }
