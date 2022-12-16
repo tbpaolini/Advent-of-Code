@@ -68,7 +68,7 @@ enum {
 
 int main(int argc, char **argv)
 {
-    FILE *input = fopen("input.txt", "rt");
+    FILE *input = fopen("test.txt", "rt");
     char line[512];
 
     CaveCoordinate max = {INT64_MIN, INT64_MIN};
@@ -153,9 +153,12 @@ int main(int argc, char **argv)
         CaveCoordinate wall_start = coord_convert(current_wall->start); 
         CaveCoordinate wall_end = coord_convert(current_wall->end);
 
-        for (int64_t y = wall_start.y; y <= wall_end.y; y++)
+        const int64_t dir_x = (wall_end.x >= wall_start.x) ? 1 : -1;
+        const int64_t dir_y = (wall_end.y >= wall_start.y) ? 1 : -1;
+
+        for (int64_t y = wall_start.y; y * dir_y <= wall_end.y * dir_y; y += dir_y)
         {
-            for (int64_t x = wall_start.x; x <= wall_end.x; x++)
+            for (int64_t x = wall_start.x; x * dir_x <= wall_end.x * dir_x; x += dir_x)
             {
                 assert(y < height && x < width && y >= 0 && x >= 0);
                 map[y][x] = WALL;
@@ -165,8 +168,10 @@ int main(int argc, char **argv)
         current_wall = current_wall->next;
     }
 
-    uint64_t sand_count = 0;
-    CaveCoordinate sand_origin = coord_convert((CaveCoordinate){500, 0});
+    CaveCoordinate sand_source = coord_convert((CaveCoordinate){500, 0});   // Where the sand starts from
+    CaveCoordinate sand_current = sand_source;  // Current position of the sand
+    CaveCoordinate sand_previous = sand_source; // Previous position of the sand
+    uint64_t sand_count = 0;                    // Amount of sand units so far
 
     #ifdef _DEBUG
         // Print the map when debugging
@@ -175,12 +180,47 @@ int main(int argc, char **argv)
             for (size_t x = 0; x < width; x++)
             {
                 char text = map[y][x] ? '#' : '.';
-                if (x == sand_origin.x && y == sand_origin.y) text = '+';
+                if (x == sand_source.x && y == sand_source.y) text = '+';
                 putchar(text);
             }
             putchar('\n');
         }
     #endif
+
+    while (true)
+    {
+        const int64_t x = sand_current.x;
+        const int64_t y = sand_current.y;
+        const uint8_t below = map[y+1][x];
+        const uint8_t bottom_left = map[y+1][x-1];
+        const uint8_t bottom_right = map[y+1][x+1];
+        
+        if (!below)
+        {
+            sand_previous = sand_current;
+            sand_current.y += 1;
+        }
+        else if (!bottom_left)
+        {
+            sand_previous = sand_current;
+            sand_current.x -= 1;
+            sand_current.y += 1;
+        }
+        else if (!bottom_right)
+        {
+            sand_previous = sand_current;
+            sand_current.x += 1;
+            sand_current.y += 1;
+        }
+        else
+        {
+            map[y][x] = SAND;
+            sand_count += 1;
+            sand_current = sand_source;
+        }
+
+        if (sand_current.y > max.y) break;
+    }
 
     return 0;
 }
