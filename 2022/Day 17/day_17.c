@@ -6,9 +6,6 @@
 #include <stddef.h>
 #include <assert.h>
 
-static const bool wall[9]  = {1,0,0,0,0,0,0,0,1};
-static const bool floor[9] = {1,1,1,1,1,1,1,1,1};
-
 // Coordinates of the blocks on the board
 typedef struct BoardCoord
 {
@@ -21,14 +18,47 @@ typedef struct Board
     int64_t column_height[7];   // Maximum height of each column in the board
     int64_t height_limit;       // Amount of available rows in the board
     int64_t trimmed_rows;       // Total amount of rows removed from the board (in order to save memory)
-    bool *board[];              // 2-D array to represent the board
+    bool *coord[];              // 2-D array of booleans to represent if some coordinate has a block: .coord[y][x]
 } Board;
 
 typedef struct Piece
 {
-    size_t size;            // How many blocks in the piece (4 or 5)
-    BoardCoord block[5];    // The offsets of the blocks from the piece's origin (top left)
-};
+    size_t size;                // How many blocks in the piece (4 or 5)
+    struct BoardCoord block[5]; // The offsets of the blocks from the piece's origin (top left)
+} Piece;
+
+static Board* board_new(size_t height)
+{
+    static const bool wall[9]  = {1,0,0,0,0,0,0,0,1};
+    static const bool floor[9] = {1,1,1,1,1,1,1,1,1};
+    
+    height += 1;
+    size_t row_size = 9 * height * sizeof(bool);
+    size_t board_size = sizeof(Board) + (height * sizeof(bool*)) + row_size;
+    
+    Board *board = (Board*)malloc(board_size);
+    if (!board)
+    {
+        fprintf(stderr, "Error: No enough memory\n");
+        abort();
+    }
+
+    memset(board, 0, sizeof(Board));
+    board->height_limit = height;
+    
+    ptrdiff_t row_ptr = (ptrdiff_t)(&board->coord[0]);
+
+    for (size_t i = 0; i < height; i++)
+    {
+        board->coord[i] = (bool*)row_ptr;
+        row_ptr += sizeof(bool*);
+        memcpy(board->coord[i], wall, row_size);
+    }
+    
+    memcpy(board->coord[height-1], floor, row_size);
+
+    return board;
+}
 
 int main(int argc, char **argv)
 {
