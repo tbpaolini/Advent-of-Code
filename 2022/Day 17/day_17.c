@@ -6,6 +6,30 @@
 #include <stddef.h>
 #include <assert.h>
 
+static const bool wall[9]  = {1,0,0,0,0,0,0,0,1};
+static const bool floor[9] = {1,1,1,1,1,1,1,1,1};
+
+// Coordinates of the blocks on the board
+typedef struct BoardCoord
+{
+    int64_t x;
+    int64_t y;
+} BoardCoord;
+
+typedef struct Board
+{
+    int64_t column_height[7];   // Maximum height of each column in the board
+    int64_t height_limit;       // Amount of available rows in the board
+    int64_t trimmed_rows;       // Total amount of rows removed from the board (in order to save memory)
+    bool *board[];              // 2-D array to represent the board
+} Board;
+
+typedef struct Piece
+{
+    size_t size;            // How many blocks in the piece (4 or 5)
+    BoardCoord block[5];    // The offsets of the blocks from the piece's origin (top left)
+};
+
 int main(int argc, char **argv)
 {
     // Open the input file
