@@ -15,47 +15,73 @@ typedef struct BoardCoord
 
 typedef struct Board
 {
-    int64_t column_height[7];   // Maximum height of each column in the board
-    int64_t height_limit;       // Amount of available rows in the board
+    int64_t max_height;         // Maximum height among all columns in the board
+    int64_t num_rows;           // Amount of available rows in the board
     int64_t trimmed_rows;       // Total amount of rows removed from the board (in order to save memory)
-    bool *coord[];              // 2-D array of booleans to represent if some coordinate has a block: .coord[y][x]
+    uint8_t row[];              // Array of bitmasks to represent the rows (8-bit each)
 } Board;
 
-typedef struct Piece
-{
-    size_t size;                // How many blocks in the piece (4 or 5)
-    struct BoardCoord block[5]; // The offsets of the blocks from the piece's origin (top left)
-} Piece;
+// Bitmasks to check if a piece is next to a wall
+static const uint8_t RIGHT_BOUND = 0b0000001;   // Next to the right wall
+static const uint8_t LEFT_BOUND  = 0b1000000;   // Next to the left wall
 
+// All five pieces in order
+static uint8_t pieces[5][4] = {
+    // − piece
+    {
+        0b0011110,
+        0b0000000,
+        0b0000000,
+        0b0000000,
+    },
+
+    // + piece
+    {
+        0b0001000,
+        0b0011100,
+        0b0001000,
+        0b0000000,
+    },
+
+    // J piece
+    {
+        0b0000100,
+        0b0000100,
+        0b0011100,
+        0b0000000,
+    },
+
+    // I piece
+    {
+        0b0010000,
+        0b0010000,
+        0b0010000,
+        0b0010000,
+    },
+
+    // o piece
+    {
+        0b0011000,
+        0b0011000,
+        0b0000000,
+        0b0000000,
+    },
+};
+
+// Allocate memory for an empty game board
 static Board* board_new(size_t height)
 {
-    static const bool wall[9]  = {1,0,0,0,0,0,0,0,1};
-    static const bool floor[9] = {1,1,1,1,1,1,1,1,1};
     
-    height += 1;
-    size_t row_size = 9 * height * sizeof(bool);
-    size_t board_size = sizeof(Board) + (height * sizeof(bool*)) + row_size;
+    size_t board_size = sizeof(Board) + (height * sizeof(uint8_t));
+    Board *board = (Board*)calloc(1, board_size);
     
-    Board *board = (Board*)malloc(board_size);
     if (!board)
     {
         fprintf(stderr, "Error: No enough memory\n");
         abort();
     }
-
-    memset(board, 0, sizeof(Board));
-    board->height_limit = height;
     
-    ptrdiff_t row_ptr = (ptrdiff_t)(&board->coord[0]);
-
-    for (size_t i = 0; i < height; i++)
-    {
-        board->coord[i] = (bool*)row_ptr;
-        row_ptr += sizeof(bool*);
-        memcpy(board->coord[i], wall, row_size);
-    }
-    
-    memcpy(board->coord[height-1], floor, row_size);
+    board->num_rows = height;
 
     return board;
 }
