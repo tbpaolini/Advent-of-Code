@@ -21,12 +21,11 @@ typedef struct Board
     uint8_t row[];              // Array of bitmasks to represent the rows (8-bit each)
 } Board;
 
-// Bitmasks to check if a piece is next to a wall
-static const uint8_t RIGHT_BOUND = 0b0000001;   // Next to the right wall
-static const uint8_t LEFT_BOUND  = 0b1000000;   // Next to the left wall
+// Bitmasks to represent a piece (8 bits per row)
+typedef uint8_t Piece[4];
 
 // All five pieces in order
-static uint8_t pieces[5][4] = {
+static Piece pieces[5] = {
     // − piece
     {
         0b0011110,
@@ -66,6 +65,15 @@ static uint8_t pieces[5][4] = {
         0b0000000,
         0b0000000,
     },
+};
+
+
+// Bitmasks to check if a piece is next to a wall
+Piece walls = {
+    0b1000001,
+    0b1000001,
+    0b1000001,
+    0b1000001,
 };
 
 // Allocate memory for an empty game board
