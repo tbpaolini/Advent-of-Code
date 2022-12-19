@@ -249,7 +249,7 @@ static void board_run(
 int main(int argc, char **argv)
 {
     // Open the input file
-    FILE *input = fopen("test.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char next_char = '\0';
 
     // Get the file size
@@ -313,7 +313,7 @@ int main(int argc, char **argv)
     int64_t pieces_cycle = input_size * 5;
     if (input_size % 5 == 0) pieces_cycle /= 5;
 
-    board = board_new(4096);
+    board = board_new(1048576);
 
     // Repeat the cycle of pieces up to 1000 times, and try to find a period there
     const int64_t max_repeats = 1000;
@@ -349,6 +349,19 @@ int main(int argc, char **argv)
     }
 
     free(board);
+
+    int64_t pieces_remaining = 1000000000000 - pieces_cycle;
+    int64_t final_height = cycle1_height;
+
+    int64_t num_periods = pieces_remaining / period_length;
+    final_height += period_height * num_periods;
+    pieces_remaining %= period_length;
+
+    board = board_new(1048576);
+    board_run(board, movements, input_size, pieces_cycle + pieces_remaining);
+    final_height += (board->max_height + board->trimmed_rows) - cycle1_height;
+
+    printf("Part 2: %lu high\n", final_height);
     
     return 0;
 }
