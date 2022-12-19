@@ -20,6 +20,7 @@ typedef struct Board
     int64_t min_rows;           // Keep at least this amount of rows when trimming the board
     int64_t trimmed_rows;       // Total amount of rows removed from the board (in order to save memory)
     int64_t pieces_count;       // Total amount of pieces dropped on the board
+    int64_t moves_count;        // Total amount of attempts of horizontal movements
     uint8_t row[];              // Array of bitmasks to represent the rows (8-bit each)
 } Board;
 
@@ -116,7 +117,7 @@ static void board_run(
 {
     // Get the next piece and movement to perform on the board
     size_t piece_id = board->pieces_count % 5;          // Cycle through all 5 pieces
-    size_t move_id = board->pieces_count % mov_lenght;  // Cycle through the movements
+    size_t move_id = board->moves_count % mov_lenght;   // Cycle through the movements
     
     // Load the current piece
     Piece my_piece;
@@ -152,6 +153,7 @@ static void board_run(
         // Read the 4 bytes of the piece as one 32-bit unsigned integer
         uint32_t *my_piece_ui32 = (uint32_t*)(&my_piece);
         uint32_t tentative_move = 0;
+        board->moves_count++;
 
         // Check if the piece is next to a wall on the direction it is being pushed.
         // If not, then calculate the position where the piece is trying to move horizontally.
