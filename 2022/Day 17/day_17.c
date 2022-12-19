@@ -17,6 +17,7 @@ typedef struct Board
 {
     int64_t max_height;         // Maximum height among all columns in the board
     int64_t num_rows;           // Amount of available rows in the board
+    int64_t min_rows;           // Keep at least this amount of rows when trimming the board
     int64_t trimmed_rows;       // Total amount of rows removed from the board (in order to save memory)
     uint8_t row[];              // Array of bitmasks to represent the rows (8-bit each)
 } Board;
@@ -69,11 +70,19 @@ static Piece pieces[5] = {
 
 
 // Bitmasks to check if a piece is next to a wall
-Piece walls = {
-    0b1000001,
-    0b1000001,
-    0b1000001,
-    0b1000001,
+
+Piece RIGHT_WALL = {
+    0b0000001,
+    0b0000001,
+    0b0000001,
+    0b0000001,
+};
+
+Piece LEFT_WALL = {
+    0b1000000,
+    0b1000000,
+    0b1000000,
+    0b1000000,
 };
 
 // Allocate memory for an empty game board
@@ -90,8 +99,19 @@ static Board* board_new(size_t height)
     }
     
     board->num_rows = height;
+    board->min_rows = height / 4;
 
     return board;
+}
+
+static void board_run(
+    Board *board,       // Data structure of the board
+    char *movements,    // Array with the movements to be performed on the pieces
+    size_t mov_lenght,  // Amount of elements on the movement array
+    uint64_t pieces     // For how many pieces to simulate the game
+)
+{
+
 }
 
 int main(int argc, char **argv)
@@ -113,33 +133,27 @@ int main(int argc, char **argv)
     if (next_char == '\n') input_size -= 1;
 
     // Sanity check for the file size
-    if (input_size > 125000)
+    if (input_size > 1000000)
     {
-        fprintf(stderr, "Error: Maximum input size is 125 kB\n");
+        fprintf(stderr, "Error: Maximum input size is 1 MB\n");
         abort();
     }
     
-    rewind(input);                  // Return to the start of the file
-    int64_t direction[input_size];  // Array to store the jet stream's directions
+    rewind(input);              // Return to the start of the file
+    char movements[input_size]; // Array to store the jet stream's directions
     
     for (size_t i = 0; i < input_size; i++)
     {
         next_char = fgetc(input);
-        
-        switch (next_char)
+
+        if (next_char == '<' || next_char == '>')
         {
-            case '<':
-                direction[i] = -1;
-                break;
-            
-            case '>':
-                direction[i] = +1;
-                break;
-            
-            default:
-                fprintf(stderr, "Error: Malformatted input file\n");
-                abort();
-                break;
+            movements[i] = next_char;
+        }
+        else
+        {
+            fprintf(stderr, "Error: Malformatted input file\n");
+            abort();
         }
     }
 
