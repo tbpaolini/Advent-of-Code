@@ -68,6 +68,8 @@ static Piece pieces[5] = {
     },
 };
 
+// Initial sistance that the top left of a piece will be from the highest block in the board
+static int64_t piece_h_offsets[5] = {4, 6, 6, 7, 5};
 
 // Bitmasks to check if a piece is next to a wall
 
@@ -108,10 +110,86 @@ static void board_run(
     Board *board,       // Data structure of the board
     char *movements,    // Array with the movements to be performed on the pieces
     size_t mov_lenght,  // Amount of elements on the movement array
-    uint64_t pieces     // For how many pieces to simulate the game
+    uint64_t num_pieces // For how many pieces to simulate the game
 )
 {
+    size_t piece_id = 0;    // Cycle through all 5 pieces
+    size_t move_id = 0;     // Cycle through the movements
+    
+    // Load the current piece
+    Piece my_piece;
+    memcpy(my_piece, &pieces[piece_id], sizeof(Piece));
+    
+    // Vertical coordinate in which the piece spawns 
+    int64_t piece_y = board->max_height + piece_h_offsets[piece_id];
+    
+    for (int64_t i = 0; i < num_pieces; i++)
+    {
+        // Check if the piece falls outside the board's height limit
+        if (piece_y >= board->num_rows)
+        {
+            // Truncate the board if the piece would be above the limit
+            const int64_t trim_size = board->num_rows - board->min_rows;  // Amount of rows to cut off
+            memmove(&board->row[0], &board->row[trim_size], board->min_rows); // Move the remaining rows to the start
+            memset(&board->row[board->min_rows], 0, trim_size);              // Clear the rows after the moved ones
 
+            // Keep track of how many rows were removed
+            board->trimmed_rows += trim_size;
+            board->max_height -= trim_size;
+        }
+
+        // Get the next horizontal movement
+        char my_move = movements[move_id];
+        
+        // Read the 4 bytes of the piece as one 32-bit unsigned integer
+        uint32_t *my_piece_ui32 = (uint32_t*)(&my_piece);
+
+        // Check if the piece is next to a wall on the direction it is being pushed.
+        // If not, then move the piece horizontally on that direction.
+        if ( my_move == '>' && !(*my_piece_ui32 & *(uint32_t*)(&RIGHT_WALL)) )
+        {
+            *my_piece_ui32 >>= (uint32_t)1;
+        }
+        else if ( my_move == '<' && !(*my_piece_ui32 & *(uint32_t*)(&LEFT_WALL)) )
+        {
+            *my_piece_ui32 <<= (uint32_t)1;
+        }
+
+        // Move the piece down by one unit
+        piece_y--;
+        
+        // Check if there is a block below the piece
+        bool block_below = false;
+
+        for (int64_t i = 3; i >= 0; i--)
+        {
+            if (
+                (my_piece[i] && piece_y - i == 0) ||        // Is the piece at the bottom?
+                (my_piece[i] & board->row[piece_y - i - 1]) // If the piece moved down, would it overlap with a block?
+            )
+            {
+                block_below = true;
+                break;
+            }
+        }
+        
+        if (block_below)
+        {
+            // Add the piece to the board array
+            for (int64_t i = 0; i < 4; i++)
+            {
+                board->row[piece_y - i] |= my_piece[i];
+            }
+            
+            // Load the next piece
+            if (++piece_id == 5) piece_id = 0;
+            memcpy(my_piece, &pieces[piece_id], sizeof(Piece));
+            piece_y = board->max_height + piece_h_offsets[piece_id];
+        }
+        
+        // Go to the next movement
+        if (++move_id == mov_lenght) move_id = 0;
+    }
 }
 
 int main(int argc, char **argv)
