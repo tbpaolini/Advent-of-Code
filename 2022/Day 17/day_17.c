@@ -170,7 +170,7 @@ static void board_run(
             for (int64_t i = 0; i < 4; i++)
             {
                 // Stop if we reach the end of the board
-                if (piece_y - 1 < 0) break;
+                if (piece_y - i < 0) break;
                 
                 // Check if the piece overlaps with another piece
                 if (tentative_piece[i] & board->row[piece_y - i])
@@ -209,14 +209,14 @@ static void board_run(
             for (int64_t i = 0; i < 4; i++)
             {
                 // Stop if we reach the end of the board
-                if (piece_y - 1 < 0) break;
+                if (piece_y - i < 0) break;
                 
                 // Add the piece to the board array
                 board->row[piece_y - i] |= my_piece[i];
             }
 
-            // Set the new maximum height of the board
-            board->max_height = piece_y + 1;
+            // Update the new maximum height of the board
+            if (piece_y + 1 > board->max_height) board->max_height = piece_y + 1;
             
             // Load the next piece
             if (++piece_id == 5) piece_id = 0;
