@@ -139,6 +139,9 @@ static void board_run(
             // Keep track of how many rows were removed
             board->trimmed_rows += trim_size;
             board->max_height -= trim_size;
+
+            // Update the piece's horizontal coordinate
+            piece_y -= trim_size;
         }
 
         // Get the next horizontal movement
@@ -171,6 +174,7 @@ static void board_run(
             {
                 // Stop if we reach the end of the board
                 if (piece_y - i < 0) break;
+                assert(piece_y - i < board->num_rows);
                 
                 // Check if the piece overlaps with another piece
                 if (tentative_piece[i] & board->row[piece_y - i])
@@ -282,10 +286,10 @@ int main(int argc, char **argv)
 
     fclose(input);
 
-    Board *board = board_new(4024);
+    Board *board = board_new(1024);
     board_run(board, movements, input_size, 2022);
 
-    printf("Part 1: %lu rocks\n", board->max_height);
+    printf("Part 1: %lu rocks\n", board->max_height + board->trimmed_rows);
 
     return 0;
 }
