@@ -310,58 +310,50 @@ int main(int argc, char **argv)
     // common multiple between the amount of pieces and the amount of movements.
     // The period in which the board pattern begins repeating should be a multiple
     // of this value.
-    int64_t pieces_cycle_period = input_size * 5;
-    if (input_size % 5 == 0) pieces_cycle_period /= 5;
+    int64_t pieces_cycle = input_size * 5;
+    if (input_size % 5 == 0) pieces_cycle /= 5;
 
-    // Get the board pattern at the end of the pieces' cycle period
-    // Take a sample of the rows starting from the maximum height
-    
     board = board_new(4096);
-    int64_t pieces_count = 0;
-    
-    // Drop enough pieces on the board so its size is at least the minimum amount
-    // of rows that the board can store.
-    while (board->max_height < board->min_rows)
+
+    // Repeat the cycle of pieces up to 1000 times, and try to find a period there
+    const int64_t max_repeats = 1000;
+    int64_t delta_height[max_repeats];  // How much the height changed between each cycle
+    const int64_t sample_window = 5;    // The width of the window when trying to find repeating sequences
+
+    int64_t cycle1_height = 0;  // Height of the board after exactly one cycle of pieces has been performed
+    int64_t period_height = 0;  // Total height increase on the board after a period
+    int64_t period_length  = 0; // How many piece drops in a period
+
+    for (size_t i = 0; i < max_repeats; i++)
     {
-        board_run(board, movements, input_size, 1);
-        pieces_count++;
-    }
-    
-    // Starting from the topmost block, take a sample equal the minimum amount of rows
-    uint8_t *board_cache = (uint8_t*)malloc(board->min_rows * sizeof(uint8_t));
-    memcpy(
-        board_cache,                                        // Cache the sample
-        &board->row[board->max_height - board->min_rows],   // Start of the sample
-        board->min_rows                                     // Sample size
-    );
-    
-    // Amount of pieces dropped for the sample
-    int64_t sampled_pieces = board->pieces_count;
+        int64_t previous_height = board->max_height + board->trimmed_rows;
+        board_run(board, movements, input_size, pieces_cycle);
+        delta_height[i] = (board->max_height + board->trimmed_rows) - previous_height;
 
-    // Amount of pieces remaining to complete a full cycle of pieces
-    int64_t pieces_remaining = pieces_cycle_period - sampled_pieces;
-
-    while (true)
-    {
-        // Run one cycle of pieces
-        board_run(board, movements, input_size, pieces_cycle_period);
-
-        // Sample the rows again, and check if it is equal to the first sample
-        int comparison = memcmp(
-            board_cache,
-            &board->row[board->max_height - board->min_rows],
-            board->min_rows
-        );
-
-        if (comparison == 0)
+        if (i > sample_window + 1)
         {
-            printf("OK\n");
-            break;
+            int64_t *sample = &delta_height[i - sample_window + 1];
+            const int comparison = memcmp(sample, &delta_height[1], sample_window * sizeof(int64_t));
+            if (comparison == 0)
+            {
+                // cycle1_height = delta_height[0];
+                // period_length = (i - sample_window) * pieces_cycle;
+                // for (size_t j = 1; j < period_length+1; j++)
+                // {
+                //     period_height += delta_height[j];
+                // }
+                // break;
+            }
         }
     }
 
+    for (size_t i = 0; i < 1000; i++)
+    {
+        printf("%ld\n", delta_height[i]);
+    }
+    
+
     free(board);
-    free(board_cache);
     
     return 0;
 }
