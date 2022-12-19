@@ -15,7 +15,8 @@ typedef struct BoardCoord
 
 typedef struct Board
 {
-    int64_t max_height;         // Maximum height among all columns in the board
+    int64_t height;             // Height among all columns currently on the board
+    int64_t total_height;       // Total height considering all dropped pieces
     int64_t num_rows;           // Amount of available rows in the board
     int64_t min_rows;           // Keep at least this amount of rows when trimming the board
     int64_t trimmed_rows;       // Total amount of rows removed from the board (in order to save memory)
@@ -90,6 +91,7 @@ Piece LEFT_WALL = {
 };
 
 // Allocate memory for an empty game board
+// Note: should be freed with 'free()'
 static Board* board_new(size_t height)
 {
     
@@ -108,6 +110,24 @@ static Board* board_new(size_t height)
     return board;
 }
 
+// Create a copy of an existing board
+// Note: should be freed with 'free()'
+static Board* board_copy(Board *old_board)
+{
+    size_t board_size = sizeof(Board) + (old_board->num_rows * sizeof(uint8_t));
+    Board *new_board = (Board*)calloc(1, board_size);
+    
+    if (!new_board)
+    {
+        fprintf(stderr, "Error: No enough memory\n");
+        abort();
+    }
+
+    memcpy(new_board, old_board, board_size);
+    return new_board;
+}
+
+// Simulate pieces falling on the board
 static void board_run(
     Board *board,       // Data structure of the board
     char *movements,    // Array with the movements to be performed on the pieces
@@ -124,7 +144,7 @@ static void board_run(
     memcpy(my_piece, &pieces[piece_id], sizeof(Piece));
     
     // Vertical coordinate in which the piece spawns 
-    int64_t piece_y = board->max_height + piece_h_offsets[piece_id];
+    int64_t piece_y = board->height + piece_h_offsets[piece_id];
 
     // Amount of pieces that landed so far
     int64_t landed_pieces = 0;
@@ -141,7 +161,7 @@ static void board_run(
 
             // Keep track of how many rows were removed
             board->trimmed_rows += trim_size;
-            board->max_height -= trim_size;
+            board->height -= trim_size;
 
             // Update the piece's horizontal coordinate
             piece_y -= trim_size;
@@ -224,12 +244,12 @@ static void board_run(
             }
 
             // Update the new maximum height of the board
-            if (piece_y + 1 > board->max_height) board->max_height = piece_y + 1;
+            if (piece_y + 1 > board->height) board->height = piece_y + 1;
             
             // Load the next piece
             if (++piece_id == 5) piece_id = 0;
             memcpy(my_piece, &pieces[piece_id], sizeof(Piece));
-            piece_y = board->max_height + piece_h_offsets[piece_id];
+            piece_y = board->height + piece_h_offsets[piece_id];
 
             // Increment the pieces counter
             landed_pieces++;
@@ -244,6 +264,8 @@ static void board_run(
         // Go to the next movement
         if (++move_id == mov_lenght) move_id = 0;
     }
+
+    board->total_height = board->height + board->trimmed_rows;
 }
 
 int main(int argc, char **argv)
@@ -296,7 +318,7 @@ int main(int argc, char **argv)
     Board *board = board_new(4096);
     board_run(board, movements, input_size, 2022);
 
-    printf("Part 1: %lu high\n", board->max_height + board->trimmed_rows);
+    printf("Part 1: %lu high\n", board->total_height);
     /* Note:
         The total height is the amount of rows that were cut from the board,
         plus the maximum height on the remaining board at the end.
@@ -313,7 +335,7 @@ int main(int argc, char **argv)
     int64_t pieces_cycle = input_size * 5;
     if (input_size % 5 == 0) pieces_cycle /= 5;
 
-    board = board_new(1048576);
+    board = board_new(4096);
 
     // Repeat the cycle of pieces up to 1000 times, and try to find a period there
     const int64_t max_repeats = 1000;
@@ -324,25 +346,35 @@ int main(int argc, char **argv)
     int64_t period_height = 0;  // Total height increase on the board after a period
     int64_t period_length  = 0; // How many piece drops in a period
 
+    Board *synched_board;   // A board that is on the beginning of its first period
+
     for (size_t i = 0; i < max_repeats; i++)
     {
-        int64_t previous_height = board->max_height + board->trimmed_rows;
-        board_run(board, movements, input_size, pieces_cycle);
-        delta_height[i] = (board->max_height + board->trimmed_rows) - previous_height;
+        int64_t previous_height = board->total_height;              // Total height after the previous cycle
+        board_run(board, movements, input_size, pieces_cycle);      // Run another cycle
+        delta_height[i] = board->total_height - previous_height;    // Check how much the height has changed
 
+        if (i == 0) synched_board = board_copy(board);  // Cache the board at the beginning of the first cycle
+
+        // Sample 5 height variations, and check if the same sequence has repeated before
         if (i > sample_window + 1)
         {
             int64_t *sample = &delta_height[i - sample_window + 1];
             const int comparison = memcmp(sample, &delta_height[1], sample_window * sizeof(int64_t));
             if (comparison == 0)
             {
-                cycle1_height = delta_height[0];
-                int64_t cycle_count = i - sample_window;
-                period_length = cycle_count * pieces_cycle;
+                // If the same sequence has been found before, the period is considered to be found
+                
+                cycle1_height = delta_height[0];            // The height at the beginning of the first period
+                int64_t cycle_count = i - sample_window;    // Amount of cycles in a period
+                period_length = cycle_count * pieces_cycle; // How many pieces are dropped in a period
+                
                 for (size_t j = 1; j < cycle_count+1; j++)
                 {
+                    // Calculate how much the height has changed after one period
                     period_height += delta_height[j];
                 }
+
                 break;
             }
         }
@@ -350,16 +382,21 @@ int main(int argc, char **argv)
 
     free(board);
 
+    /*** Finally, calculating the total height after a trillion pieces ***/
+    
+    // Do one cycle
     int64_t pieces_remaining = 1000000000000 - pieces_cycle;
     int64_t final_height = cycle1_height;
 
+    // Do as many periods as possible before using up all pieces
     int64_t num_periods = pieces_remaining / period_length;
     final_height += period_height * num_periods;
     pieces_remaining %= period_length;
 
-    board = board_new(1048576);
-    board_run(board, movements, input_size, pieces_cycle + pieces_remaining);
-    final_height += (board->max_height + board->trimmed_rows) - cycle1_height;
+    // Drop the remaining pieces
+    board_run(synched_board, movements, input_size, pieces_remaining);
+    final_height += synched_board->total_height - cycle1_height;
+    free(synched_board);
 
     printf("Part 2: %lu high\n", final_height);
     
