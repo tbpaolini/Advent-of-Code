@@ -19,6 +19,7 @@ typedef struct Board
     int64_t num_rows;           // Amount of available rows in the board
     int64_t min_rows;           // Keep at least this amount of rows when trimming the board
     int64_t trimmed_rows;       // Total amount of rows removed from the board (in order to save memory)
+    int64_t pieces_count;       // Total amount of pieces dropped on the board
     uint8_t row[];              // Array of bitmasks to represent the rows (8-bit each)
 } Board;
 
@@ -113,8 +114,9 @@ static void board_run(
     uint64_t num_pieces // For how many pieces to simulate the game
 )
 {
-    size_t piece_id = 0;    // Cycle through all 5 pieces
-    size_t move_id = 0;     // Cycle through the movements
+    // Get the next piece and movement to perform on the board
+    size_t piece_id = board->pieces_count % 5;          // Cycle through all 5 pieces
+    size_t move_id = board->pieces_count % mov_lenght;  // Cycle through the movements
     
     // Load the current piece
     Piece my_piece;
@@ -229,6 +231,7 @@ static void board_run(
 
             // Increment the pieces counter
             landed_pieces++;
+            board->pieces_count++;
         }
         else
         {
@@ -244,7 +247,7 @@ static void board_run(
 int main(int argc, char **argv)
 {
     // Open the input file
-    FILE *input = fopen("input.txt", "rt");
+    FILE *input = fopen("test.txt", "rt");
     char next_char = '\0';
 
     // Get the file size
@@ -286,10 +289,77 @@ int main(int argc, char **argv)
 
     fclose(input);
 
-    Board *board = board_new(1024);
+    /******************** Part 1 ********************/
+
+    Board *board = board_new(4096);
     board_run(board, movements, input_size, 2022);
 
-    printf("Part 1: %lu rocks\n", board->max_height + board->trimmed_rows);
+    printf("Part 1: %lu high\n", board->max_height + board->trimmed_rows);
+    /* Note:
+        The total height is the amount of rows that were cut from the board,
+        plus the maximum height on the remaining board at the end.
+    */
 
+    free(board);
+
+    /******************** Part 2 ********************/
+
+    // The combination of pieces and movements begin repeating on the minimum
+    // common multiple between the amount of pieces and the amount of movements.
+    // The period in which the board pattern begins repeating should be a multiple
+    // of this value.
+    int64_t pieces_cycle_period = input_size * 5;
+    if (input_size % 5 == 0) pieces_cycle_period /= 5;
+
+    // Get the board pattern at the end of the pieces' cycle period
+    // Take a sample of the rows starting from the maximum height
+    
+    board = board_new(4096);
+    int64_t pieces_count = 0;
+    
+    // Drop enough pieces on the board so its size is at least the minimum amount
+    // of rows that the board can store.
+    while (board->max_height < board->min_rows)
+    {
+        board_run(board, movements, input_size, 1);
+        pieces_count++;
+    }
+    
+    // Starting from the topmost block, take a sample equal the minimum amount of rows
+    uint8_t *board_cache = (uint8_t*)malloc(board->min_rows * sizeof(uint8_t));
+    memcpy(
+        board_cache,                                        // Cache the sample
+        &board->row[board->max_height - board->min_rows],   // Start of the sample
+        board->min_rows                                     // Sample size
+    );
+    
+    // Amount of pieces dropped for the sample
+    int64_t sampled_pieces = board->pieces_count;
+
+    // Amount of pieces remaining to complete a full cycle of pieces
+    int64_t pieces_remaining = pieces_cycle_period - sampled_pieces;
+
+    while (true)
+    {
+        // Run one cycle of pieces
+        board_run(board, movements, input_size, pieces_cycle_period);
+
+        // Sample the rows again, and check if it is equal to the first sample
+        int comparison = memcmp(
+            board_cache,
+            &board->row[board->max_height - board->min_rows],
+            board->min_rows
+        );
+
+        if (comparison == 0)
+        {
+            printf("OK\n");
+            break;
+        }
+    }
+
+    free(board);
+    free(board_cache);
+    
     return 0;
 }
