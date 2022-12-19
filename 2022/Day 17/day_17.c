@@ -336,22 +336,17 @@ int main(int argc, char **argv)
             const int comparison = memcmp(sample, &delta_height[1], sample_window * sizeof(int64_t));
             if (comparison == 0)
             {
-                // cycle1_height = delta_height[0];
-                // period_length = (i - sample_window) * pieces_cycle;
-                // for (size_t j = 1; j < period_length+1; j++)
-                // {
-                //     period_height += delta_height[j];
-                // }
-                // break;
+                cycle1_height = delta_height[0];
+                int64_t cycle_count = i - sample_window;
+                period_length = cycle_count * pieces_cycle;
+                for (size_t j = 1; j < cycle_count+1; j++)
+                {
+                    period_height += delta_height[j];
+                }
+                break;
             }
         }
     }
-
-    for (size_t i = 0; i < 1000; i++)
-    {
-        printf("%ld\n", delta_height[i]);
-    }
-    
 
     free(board);
     
