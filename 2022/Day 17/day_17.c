@@ -240,7 +240,7 @@ static void board_run(
 int main(int argc, char **argv)
 {
     // Open the input file
-    FILE *input = fopen("test.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char next_char = '\0';
 
     // Get the file size
@@ -284,6 +284,8 @@ int main(int argc, char **argv)
 
     Board *board = board_new(4024);
     board_run(board, movements, input_size, 2022);
+
+    printf("Part 1: %lu rocks\n", board->max_height);
 
     return 0;
 }
