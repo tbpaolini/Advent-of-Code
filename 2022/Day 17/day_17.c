@@ -181,6 +181,9 @@ static void board_run(
                 board->row[piece_y - i] |= my_piece[i];
             }
             
+            // Set the new maximum height of the board
+            board->max_height = piece_y + 1;
+            
             // Load the next piece
             if (++piece_id == 5) piece_id = 0;
             memcpy(my_piece, &pieces[piece_id], sizeof(Piece));
@@ -195,7 +198,7 @@ static void board_run(
 int main(int argc, char **argv)
 {
     // Open the input file
-    FILE *input = fopen("input.txt", "rt");
+    FILE *input = fopen("test.txt", "rt");
     char next_char = '\0';
 
     // Get the file size
@@ -236,6 +239,9 @@ int main(int argc, char **argv)
     }
 
     fclose(input);
+
+    Board *board = board_new(4024);
+    board_run(board, movements, input_size, 2022);
 
     return 0;
 }
