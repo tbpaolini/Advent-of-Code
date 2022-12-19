@@ -140,21 +140,6 @@ static void board_run(
             board->trimmed_rows += trim_size;
             board->max_height -= trim_size;
         }
-        
-        // Check if there is a block below the piece
-        bool block_below = false;
-
-        for (int64_t i = 3; i >= 0; i--)
-        {
-            if (
-                (my_piece[i] && piece_y - i == 0) ||        // Is the piece at the bottom?
-                (my_piece[i] & board->row[piece_y - i - 1]) // If the piece moved down, would it overlap with a block?
-            )
-            {
-                block_below = true;
-                break;
-            }
-        }
 
         // Get the next horizontal movement
         char my_move = movements[move_id];
@@ -171,7 +156,7 @@ static void board_run(
         }
         else if ( my_move == '<' && !(*my_piece_ui32 & *(uint32_t*)(&LEFT_WALL)) )
         {
-            tentative_move = *my_piece_ui32 >> (uint32_t)1;
+            tentative_move = *my_piece_ui32 << (uint32_t)1;
         }
 
         // If the piece is not trying to move into a wall,
@@ -182,8 +167,11 @@ static void board_run(
             uint8_t *tentative_piece = (uint8_t*)(&tentative_move); // Each byte of the piece value represents a row
             
             // Loop through each row of the piece
-            for (size_t i = 0; i < 4; i++)
+            for (int64_t i = 0; i < 4; i++)
             {
+                // Stop if we reach the end of the board
+                if (piece_y - 1 < 0) break;
+                
                 // Check if the piece overlaps with another piece
                 if (tentative_piece[i] & board->row[piece_y - i])
                 {
@@ -199,11 +187,30 @@ static void board_run(
             }
         }
 
+
+        // Check if there is a block below the piece
+        bool block_below = false;
+
+        for (int64_t i = 0; i < 4; i++)
+        {
+            if (
+                (my_piece[i] && piece_y - i == 0) ||        // Is the piece at the bottom?
+                (my_piece[i] & board->row[piece_y - i - 1]) // If the piece moved down, would it overlap with a block?
+            )
+            {
+                block_below = true;
+                break;
+            }
+        }
+
         if (block_below)
         {
             // Land the piece if there is something below
             for (int64_t i = 0; i < 4; i++)
             {
+                // Stop if we reach the end of the board
+                if (piece_y - 1 < 0) break;
+                
                 // Add the piece to the board array
                 board->row[piece_y - i] |= my_piece[i];
             }
