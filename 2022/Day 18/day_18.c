@@ -44,6 +44,7 @@ static void list_destroy(LavaList *list_head)
 }
 
 // Perform a Depth First Search to check if there is a path to the water outside the area
+// Returns 1 if a path was found, 0 otherwise.
 static int64_t pathfind_dfs(
     LavaCoord coord,        // Coordinates of the starting point
     LavaCoord max_coord,    // Maximum coordinates of the search area
@@ -51,8 +52,6 @@ static int64_t pathfind_dfs(
     bool visited[max_coord.z+1][max_coord.y+1][max_coord.x+1]   // Visited spaces on the grid (initialized to zero)
 )
 {
-    if (visited[coord.z][coord.y][coord.x]) return 0;
-    
     // If we are outside the grid, consider the current coordinate as exposed to the surface
     if (
         (coord.x < 0 || coord.x > max_coord.x) ||
@@ -63,6 +62,9 @@ static int64_t pathfind_dfs(
         return 1;
     }
 
+    // If this space has been visited already
+    if (visited[coord.z][coord.y][coord.x]) return 0;
+    
     // Mark this space as 'visited'
     visited[coord.z][coord.y][coord.x] = true;
     
@@ -200,8 +202,10 @@ int main(int argc, char **argv)
                     {x, y, z-1},   // Front
                 };
 
+                // Loop through all faces
                 for (size_t i = 0; i < 6; i++)
                 {
+                    // Check if the face is exposed to air
                     if (
                         face[i].x < 0 || face[i].y < 0 || face[i].z < 0 ||
                         face[i].x > max_coord.x ||face[i].y > max_coord.y ||face[i].z > max_coord.z ||
@@ -210,6 +214,7 @@ int main(int argc, char **argv)
                     {
                         faces_count_p1++;
                         
+                        // Check if there is a path to water
                         memset(visited, 0, sizeof(visited));
                         faces_count_p2 += pathfind_dfs(face[i], max_coord, lava, visited);
                     }
@@ -219,8 +224,8 @@ int main(int argc, char **argv)
         }
     }
 
-    printf("%ld\n", faces_count_p1);
-    printf("%ld\n", faces_count_p2);
+    printf("Part 1: %ld faces\n", faces_count_p1);
+    printf("Part 2: %ld faces\n", faces_count_p2);
 
     return 0;
 }
