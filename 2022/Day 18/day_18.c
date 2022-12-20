@@ -53,6 +53,7 @@ int main(int argc, char **argv)
     // List of coordinates
     LavaList *coord_list = NULL;
     LavaList *last_coord = NULL;
+    LavaCoord max_coord = {0, 0, 0};
 
     while (fgets(line, sizeof(line), input))
     {
@@ -76,9 +77,28 @@ int main(int argc, char **argv)
         token = strtok(NULL, delimiter);
         assert(isdigit(token[0]));
         coord->coord.z = atol(token);
+
+        // Check the maximum coordinate on all axes
+        if (coord->coord.x > max_coord.x) max_coord.x = coord->coord.x;
+        if (coord->coord.y > max_coord.y) max_coord.y = coord->coord.y;
+        if (coord->coord.z > max_coord.z) max_coord.z = coord->coord.z;
     }
     
     fclose(input);
+
+    // 3-D array to represent the coordinates that have a lava droplet
+    bool lava[max_coord.z][max_coord.y][max_coord.x];
+    memset(lava, 0, sizeof(lava));
+
+    // Flag the coordinates that have a droplet
+    LavaList *droplet = coord_list;
+    while (droplet)
+    {
+        lava[droplet->coord.z][droplet->coord.y][droplet->coord.x] = true;
+        droplet = droplet->next;
+    }
+    list_destroy(coord_list);
+    
 
     return 0;
 }
