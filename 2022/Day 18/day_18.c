@@ -103,11 +103,8 @@ static int64_t pathfind_dfs(
                 visited
             );
 
-            // If this has a path to outside
-            if (this_exit)
-            {
-                return 1;
-            }
+            // If this exit has a path to outside
+            if (this_exit) return 1;
         }
     }
     
@@ -169,14 +166,9 @@ int main(int argc, char **argv)
         droplet = droplet->next;
     }
     list_destroy(coord_list);
-    
-    // Axis orientation:
-    //   -y
-    //    |
-    //    |___-x
-    //    /
-    //   /
-    // -z
+
+    // 3-D array for keeping track of which spaces were already visited during pathfinding
+    bool visited[max_coord.z+1][max_coord.y+1][max_coord.x+1];
     
     // Check which faces are exposed
     int64_t faces_count_p1 = 0;
@@ -187,9 +179,18 @@ int main(int argc, char **argv)
         {
             for (int64_t x = 0; x <= max_coord.x; x++)
             {
+                // Axis orientation:
+                //   -y
+                //    |
+                //    |___-x
+                //    /
+                //   /
+                // -z
+                
                 // Check if there is a droplet here
                 if (!lava[z][y][x]) continue;
                 
+                // The six faces of the cube
                 const LavaCoord face[6] = {
                     {x+1, y, z},   // Left
                     {x-1, y, z},   // Right
@@ -208,6 +209,9 @@ int main(int argc, char **argv)
                     )
                     {
                         faces_count_p1++;
+                        
+                        memset(visited, 0, sizeof(visited));
+                        faces_count_p2 += pathfind_dfs(face[i], max_coord, lava, visited);
                     }
                 }
                 
