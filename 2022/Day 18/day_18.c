@@ -117,7 +117,7 @@ static int64_t surface_search(
 int main(int argc, char **argv)
 {
     // Open the input file
-    FILE *input = fopen("input.txt", "rt");
+    FILE *input = fopen("test.txt", "rt");
     char line[16];
 
     // List of coordinates
@@ -178,7 +178,7 @@ int main(int argc, char **argv)
     // -z
     
     // Check which faces are exposed
-    int64_t faces_count = 0;
+    int64_t faces_count_p1 = 0;
     for (int64_t z = 0; z <= max_coord.z; z++)
     {
         for (int64_t y = 0; y <= max_coord.y; y++)
@@ -189,27 +189,27 @@ int main(int argc, char **argv)
                 if (!lava[z][y][x]) continue;
                 
                 // Top face
-                if (y-1 < 0 || !lava[z][y-1][x]) faces_count++;
+                if (y-1 < 0 || !lava[z][y-1][x]) faces_count_p1++;
 
                 // Bottom face
-                if (y+1 > max_coord.y || !lava[z][y+1][x]) faces_count++;
+                if (y+1 > max_coord.y || !lava[z][y+1][x]) faces_count_p1++;
 
                 // Right face
-                if (x-1 < 0 || !lava[z][y][x-1]) faces_count++;
+                if (x-1 < 0 || !lava[z][y][x-1]) faces_count_p1++;
 
                 // Left face
-                if (x+1 > max_coord.x || !lava[z][y][x+1]) faces_count++;
+                if (x+1 > max_coord.x || !lava[z][y][x+1]) faces_count_p1++;
 
                 // Back face
-                if (z-1 < 0 || !lava[z-1][y][x]) faces_count++;
+                if (z-1 < 0 || !lava[z-1][y][x]) faces_count_p1++;
 
                 // Front face
-                if (z+1 > max_coord.z || !lava[z+1][y][x]) faces_count++;
+                if (z+1 > max_coord.z || !lava[z+1][y][x]) faces_count_p1++;
             }
         }
     }
 
-    printf("%ld\n", faces_count);
+    printf("%ld\n", faces_count_p1);
 
     int64_t faces_count_p2 = 0;
     for (int64_t z = 0; z <= max_coord.z; z++)
@@ -221,9 +221,16 @@ int main(int argc, char **argv)
                 // Check if there is a droplet here
                 if (!lava[z][y][x]) continue;
                 
+                faces_count_p2 += surface_search(
+                    (LavaCoord){x, y, z},
+                    max_coord,
+                    lava
+                );
             }
         }
     }
+
+    printf("%ld\n", faces_count_p2);
 
     return 0;
 }
