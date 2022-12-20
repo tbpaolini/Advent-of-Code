@@ -87,15 +87,15 @@ static int64_t pathfind_dfs(
         const int64_t y = exit[i].y;
         const int64_t z = exit[i].z;
         
-        // If the current space is empty and not yet visited
+        // If the current exit is empty and not yet visited
+        // (we are also doing some bound checks in order to not overrun the arrays)
         if (
-            !visited[z][y][x] ||
             x < 0 || y < 0 || z < 0 ||
             x > max_coord.x || y > max_coord.y || z > max_coord.z ||
-            !lava[z][y][x]
+            (!visited[z][y][x] && !lava[z][y][x])
         )
         {
-            // Recursively search from the current space
+            // Recursively search from the current exit
             const int64_t this_exit = pathfind_dfs(
                 (LavaCoord){x, y, z},
                 max_coord,
