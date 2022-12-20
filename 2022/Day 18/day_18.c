@@ -87,7 +87,7 @@ int main(int argc, char **argv)
     fclose(input);
 
     // 3-D array to represent the coordinates that have a lava droplet
-    bool lava[max_coord.z][max_coord.y][max_coord.x];
+    bool lava[max_coord.z+1][max_coord.y+1][max_coord.x+1];
     memset(lava, 0, sizeof(lava));
 
     // Flag the coordinates that have a droplet
@@ -99,6 +99,47 @@ int main(int argc, char **argv)
     }
     list_destroy(coord_list);
     
+    // Axis orientation:
+    //   -y
+    //    |
+    //    |___-x
+    //    /
+    //   /
+    // -z
+    
+    // Check which faces are exposed
+    int64_t faces_count = 0;
+    for (int64_t z = 0; z <= max_coord.z; z++)
+    {
+        for (int64_t y = 0; y <= max_coord.y; y++)
+        {
+            for (int64_t x = 0; x <= max_coord.x; x++)
+            {
+                // Check if there is a droplet here
+                if (!lava[z][y][x]) continue;
+                
+                // Top face
+                if (y-1 < 0 || !lava[z][y-1][x]) faces_count++;
+
+                // Bottom face
+                if (y+1 > max_coord.y || !lava[z][y+1][x]) faces_count++;
+
+                // Right face
+                if (x-1 < 0 || !lava[z][y][x-1]) faces_count++;
+
+                // Left face
+                if (x+1 > max_coord.x || !lava[z][y][x+1]) faces_count++;
+
+                // Back face
+                if (z-1 < 0 || !lava[z-1][y][x]) faces_count++;
+
+                // Front face
+                if (z+1 > max_coord.z || !lava[z+1][y][x]) faces_count++;
+            }
+        }
+    }
+
+    printf("%ld\n", faces_count);
 
     return 0;
 }
