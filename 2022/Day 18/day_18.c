@@ -43,6 +43,76 @@ static void list_destroy(LavaList *list_head)
     }
 }
 
+// Perform a Depth First Search to count how many faces of one cube are exposed to the outside
+static int64_t surface_search(
+    LavaCoord cube,         // Coordinates of the cube
+    LavaCoord max_coord,    // Maximum coordinates of the search area
+    bool lava[max_coord.z+1][max_coord.y+1][max_coord.x+1]  // Grid of cubes
+)
+{
+    // If we are outside the grid, consider the current coordinate as exposed to the surface
+    if (
+        (cube.x < 0 || cube.x > max_coord.x) ||
+        (cube.y < 0 || cube.y > max_coord.y) ||
+        (cube.z < 0 || cube.z > max_coord.z)
+    )
+    {
+        return 1;
+    }
+    
+    // Amount of faces exposed to the outside
+    int64_t surface_area = 0;
+    
+    // Spaces next to each of the six faces
+    const LavaCoord face[6] = {
+        {cube.x+1, cube.y, cube.z},   // Left
+        {cube.x-1, cube.y, cube.z},   // Right
+        {cube.x, cube.y+1, cube.z},   // Bottom
+        {cube.x, cube.y-1, cube.z},   // Top
+        {cube.x, cube.y, cube.z+1},   // Back
+        {cube.x, cube.y, cube.z-1},   // Front
+    };
+    
+    // Loop through the six faces
+    for (size_t i = 0; i < 6; i++)
+    {
+        // Current coordinates
+        const int64_t x = face[i].x;
+        const int64_t y = face[i].y;
+        const int64_t z = face[i].z;
+        
+        // If the current space is empty
+        if (
+            x < 0 || y < 0 || z < 0 ||
+            x > max_coord.x || y > max_coord.y || z > max_coord.z ||
+            !lava[z][y][x]
+        )
+        {
+            // Recursively search from the current space
+            const int64_t this_face = surface_search(
+                (LavaCoord){x, y, z},
+                max_coord,
+                lava
+            );
+
+            // If this space is on the outside
+            if (this_face)
+            {
+                // Count the exposed space
+                surface_area += this_face;
+                
+                // Once a path to the outside has been found, stop searching if
+                // we started from an empty space.
+                // This prevents counting the same exposed face more than once,
+                // while still searching through every face of a filled space.
+                if (!lava[cube.z][cube.y][cube.x]) break;
+            }
+        }
+    }
+    
+    return surface_area;
+}
+
 
 int main(int argc, char **argv)
 {
@@ -140,6 +210,20 @@ int main(int argc, char **argv)
     }
 
     printf("%ld\n", faces_count);
+
+    int64_t faces_count_p2 = 0;
+    for (int64_t z = 0; z <= max_coord.z; z++)
+    {
+        for (int64_t y = 0; y <= max_coord.y; y++)
+        {
+            for (int64_t x = 0; x <= max_coord.x; x++)
+            {
+                // Check if there is a droplet here
+                if (!lava[z][y][x]) continue;
+                
+            }
+        }
+    }
 
     return 0;
 }
