@@ -115,7 +115,7 @@ static int64_t pathfind_dfs(
 int main(int argc, char **argv)
 {
     // Open the input file
-    FILE *input = fopen("test.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char line[16];
 
     // List of coordinates
