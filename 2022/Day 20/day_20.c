@@ -122,6 +122,15 @@ int main(int argc, char **argv)
 
     // Perform one round of mixing for Part 1
     mix(value_count, values_p1, 1);
+
+    // Apply the decryption key for Part 2
+    for (int64_t i = 0; i < value_count; i++)
+    {
+        values_p2[i].number *= 811589153;
+    }
+
+    // Perform 10 rounds of mixing for Part 2
+    mix(value_count, values_p2, 10);
     
     int64_t solution_p1 = 0;
     int64_t solution_p2 = 0;
@@ -129,16 +138,20 @@ int main(int argc, char **argv)
     for (size_t i = 1; i <= 3; i++)
     {
         CircularList *value_p1 = decrypted_p1;
+        CircularList *value_p2 = decrypted_p2;
         
         for (size_t j = 0; j < (1000 * i) % value_count; j++)
         {
             value_p1 = value_p1->next;
+            value_p2 = value_p2->next;
         }
         
         solution_p1 += value_p1->number;
+        solution_p2 += value_p2->number;
     }
 
     printf("Part 1: %ld\n", solution_p1);
+    printf("Part 2: %ld\n", solution_p2);
 
     return 0;
 }
