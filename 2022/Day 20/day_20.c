@@ -16,7 +16,7 @@ typedef struct MixValue {
 int main(int argc, char **argv)
 {
     // Open the input file
-    FILE *input = fopen("test.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char line[16];
     
     int64_t value_count = 0;
@@ -105,12 +105,21 @@ int main(int argc, char **argv)
         }
     }
 
-    MixValue *test = decrypted;
-    for (size_t i = 0; i < 3000 % value_count; i++)
-    {
-        test = test->next;
-    }
+    int64_t solution_p1 = 0;
     
+    for (size_t i = 1; i <= 3; i++)
+    {
+        MixValue *value_p1 = decrypted;
+        
+        for (size_t j = 0; j < (1000 * i) % value_count; j++)
+        {
+            value_p1 = value_p1->next;
+        }
+        
+        solution_p1 += value_p1->number;
+    }
+
+    printf("Part 1: %ld\n", solution_p1);
 
     return 0;
 }
