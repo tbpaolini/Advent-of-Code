@@ -13,10 +13,21 @@ typedef struct MixValue {
     struct MixValue *previous;  // Previous value on the list
 } MixValue;
 
+static MixValue* cycle(MixValue *val, size_t count)
+{
+    MixValue *res = val->next;
+    for (size_t i = 0; i < count-1; i++)
+    {
+        assert(res != val);
+        res = res->next;
+    }
+    return res;
+}
+
 int main(int argc, char **argv)
 {
     // Open the input file
-    FILE *input = fopen("input.txt", "rt");
+    FILE *input = fopen("test.txt", "rt");
     char line[16];
     
     int64_t value_count = 0;
@@ -36,11 +47,11 @@ int main(int argc, char **argv)
     fclose(input);
 
     // Link the values to each other
-    for (size_t i = 0; i < value_count; i++)
+    for (int64_t i = 0; i < value_count; i++)
     {
         // Wrap the indexes around
-        size_t next_id = (i == value_count - 1) ? 0 : i+1;
-        size_t prev_id = (i == 0) ? value_count - 1 : i-1;
+        int64_t next_id = (i == value_count - 1) ? 0 : i+1;
+        int64_t prev_id = (i == 0) ? value_count - 1 : i-1;
         
         // Link the current value to the next and the pevious
         values[i].next = &values[next_id];
@@ -50,7 +61,9 @@ int main(int argc, char **argv)
         if (values[i].number == 0) decrypted = &values[i];
     }
 
-    for (size_t i = 0; i < value_count; i++)
+    assert(decrypted == cycle(decrypted, value_count));
+
+    for (int64_t i = 0; i < value_count; i++)
     {
         MixValue *value = &values[i];
         MixValue *new_position = value;
@@ -103,6 +116,8 @@ int main(int argc, char **argv)
             new_position->previous->next = value;
             new_position->previous = value;
         }
+
+        assert(decrypted == cycle(decrypted, value_count));
     }
 
     int64_t solution_p1 = 0;
