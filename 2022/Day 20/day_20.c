@@ -27,7 +27,7 @@ static MixValue* cycle(MixValue *val, size_t count)
 int main(int argc, char **argv)
 {
     // Open the input file
-    FILE *input = fopen("test.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char line[16];
     
     int64_t value_count = 0;
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
         head->next->previous = value;
         head->next = value;
 
-        // assert(decrypted == cycle(decrypted, value_count));
+        assert(decrypted == cycle(decrypted, value_count));
     }
 
     int64_t solution_p1 = 0;
