@@ -41,6 +41,17 @@ static void mix(
             // we are taking the modulo by the list lenght minus 1 (not the list lenght itself).
             int64_t steps = value->number % (value_count - 1);
 
+            // Check which direction is the shortest to rotate the list,
+            // while still reaching the same destination
+            int64_t other_dir_steps = (value_count - 1) + steps;
+            if ( abs(other_dir_steps) <  abs(steps) )
+            {
+                steps = other_dir_steps;
+            }
+
+            // Do nothing if the value ends up in the same position
+            if (steps == 0) continue;
+
             // Remove the head from the list
             // (the previous element becomes the new head)
             head->previous->next = head->next;
@@ -132,24 +143,30 @@ int main(int argc, char **argv)
     // Perform 10 rounds of mixing for Part 2
     mix(value_count, values_p2, 10);
     
+    // Answers for both parts
     int64_t solution_p1 = 0;
     int64_t solution_p2 = 0;
     
+    // Check the 1000th, 2000th, and 3000th values on the lists
     for (size_t i = 1; i <= 3; i++)
     {
+        // Start from the value of zero
         CircularList *value_p1 = decrypted_p1;
         CircularList *value_p2 = decrypted_p2;
         
+        // Check the corresponding value after that
         for (size_t j = 0; j < (1000 * i) % value_count; j++)
         {
             value_p1 = value_p1->next;
             value_p2 = value_p2->next;
         }
         
+        // Add the value to the solution
         solution_p1 += value_p1->number;
         solution_p2 += value_p2->number;
     }
 
+    // Print the answers
     printf("Part 1: %ld\n", solution_p1);
     printf("Part 2: %ld\n", solution_p2);
 
