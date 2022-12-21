@@ -101,8 +101,8 @@ int main(int argc, char **argv)
         // Insert the value after the current head
         value->previous = head;
         value->next = head->next;
-        head->next = value;
         head->next->previous = value;
+        head->next = value;
 
         // assert(decrypted == cycle(decrypted, value_count));
     }
