@@ -27,7 +27,7 @@ static MixValue* cycle(MixValue *val, size_t count)
 int main(int argc, char **argv)
 {
     // Open the input file
-    FILE *input = fopen("input.txt", "rt");
+    FILE *input = fopen("test.txt", "rt");
     char line[16];
     
     int64_t value_count = 0;
@@ -65,53 +65,46 @@ int main(int argc, char **argv)
 
     for (int64_t i = 0; i < value_count; i++)
     {
+        // Set the head of the list to the current value
         MixValue *value = &values[i];
-        MixValue *new_position = value;
-        int64_t steps = value->number % value_count;    // How many steps to take in the circular list
+        MixValue *head = value;                             
+        
+        // How many spaces to move the value in the circular list
+        // Important: Since the other elements are being rotated around the current value,
+        // we are taking the modulo by the list lenght minus 1 (not the list lenght itself).
+        int64_t steps = value->number % (value_count - 1);
 
-        // Navigate fowards or backwards on the list
+        // Remove the head from the list
+        // (the previous element becomes the new head)
+        head->previous->next = head->next;
+        head->next->previous = head->previous;
+        head = head->previous;
+
+        // Rotate the list's head forwards or backwards
         if (steps > 0)
         {
-            // Positive value: fowards
+            // Positive value: forwards
             for (int64_t j = 0; j < steps; j++)
             {
-                new_position = new_position->next;
+                head = head->next;
             }
-
-            // On the "gap" left by the value, link the values there to each other
-            value->previous->next = value->next;
-            value->next->previous = value->previous;
-
-            // Link the value to the ones that now come before and after
-            value->previous = new_position;
-            value->next = new_position->next;
-
-            // Link the neighbors to the value
-            new_position->next->previous = value;
-            new_position->next = value;
         }
         else if (steps < 0)
         {
             // Negative value: backwards
             for (int64_t j = 0; j < -steps; j++)
             {
-                new_position = new_position->previous;
+                head = head->previous;
             }
-
-            // On the "gap" left by the value, link the values there to each other
-            value->previous->next = value->next;
-            value->next->previous = value->previous;
-
-            // Link the value to the ones that now come before and after
-            value->next = new_position;
-            value->previous = new_position->previous;
-
-            // Link the neighbors to the value
-            new_position->previous->next = value;
-            new_position->previous = value;
         }
 
-        assert(decrypted == cycle(decrypted, value_count));
+        // Insert the value after the current head
+        value->previous = head;
+        value->next = head->next;
+        head->next = value;
+        head->next->previous = value;
+
+        // assert(decrypted == cycle(decrypted, value_count));
     }
 
     int64_t solution_p1 = 0;
