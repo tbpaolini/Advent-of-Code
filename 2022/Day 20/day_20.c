@@ -54,41 +54,63 @@ int main(int argc, char **argv)
     {
         MixValue *value = &values[i];
         MixValue *new_position = value;
+        int64_t steps = value->number % value_count;    // How many steps to take in the circular list
 
         // Navigate fowards or backwards on the list
-        if (value->number > 0)
+        if (steps > 0)
         {
+            // Positive value: fowards
+            for (int64_t j = 0; j < steps; j++)
+            {
+                new_position = new_position->next;
+            }
+
+            // On the "gap" left by the value, link the values there to each other
+            value->previous->next = value->next;
+            value->next->previous = value->previous;
+
+            // Link the value to the ones that now come before and after
+            value->previous = new_position;
+            value->next = new_position->next;
+
+            // Link the neighbors to the value
+            new_position->next->previous = value;
+            new_position->next = value;
+        }
+        else if (steps < 0)
+        {
+            // Negative value: backwards
+            for (int64_t j = 0; j < -steps; j++)
+            {
+                new_position = new_position->previous;
+            }
+
             // Positive value: fowards
             for (int64_t j = 0; j < value->number; j++)
             {
                 new_position = new_position->next;
             }
-            
-            // Link the current value to the values before and after it
-            value->previous = new_position;
-            value->next = new_position->next;
 
-            // Link the values before and after to the current values
-            new_position->next->previous = value;
-            new_position->next = value;
-        }
-        else if (value->number < 0)
-        {
-            // Negative value: backwards
-            for (int64_t j = 0; j < -value->number; j++)
-            {
-                new_position = new_position->previous;
-            }
+            // On the "gap" left by the value, link the values there to each other
+            value->previous->next = value->next;
+            value->next->previous = value->previous;
 
-            // Link the current value to the values before and after it
+            // Link the value to the ones that now come before and after
             value->next = new_position;
             value->previous = new_position->previous;
 
-            // Link the values before and after to the current values
+            // Link the neighbors to the value
             new_position->previous->next = value;
             new_position->previous = value;
         }
     }
+
+    MixValue *test = decrypted;
+    for (size_t i = 0; i < 3000 % value_count; i++)
+    {
+        test = test->next;
+    }
+    
 
     return 0;
 }
