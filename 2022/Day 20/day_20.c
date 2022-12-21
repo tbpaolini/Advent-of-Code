@@ -27,7 +27,7 @@ static MixValue* cycle(MixValue *val, size_t count)
 int main(int argc, char **argv)
 {
     // Open the input file
-    FILE *input = fopen("test.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char line[16];
     
     int64_t value_count = 0;
@@ -96,12 +96,6 @@ int main(int argc, char **argv)
             for (int64_t j = 0; j < -steps; j++)
             {
                 new_position = new_position->previous;
-            }
-
-            // Positive value: fowards
-            for (int64_t j = 0; j < value->number; j++)
-            {
-                new_position = new_position->next;
             }
 
             // On the "gap" left by the value, link the values there to each other
