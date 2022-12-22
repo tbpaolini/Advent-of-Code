@@ -167,7 +167,26 @@ int main(int argc, char **argv)
             int64_t new_x = x + dir_x;
             int64_t new_y = y + dir_y;
 
-            // TO DO: Wrap around
+            enum {NONE, RIGHT, DOWN, LEFT, UP} wrap = NONE;
+
+            if (dir_x > 0)
+            {
+                if (new_x == width || temp_board[new_y][new_x] == ' ') wrap = LEFT;
+            }
+            else if (dir_x < 0)
+            {
+                if (new_x == -1 || temp_board[new_y][new_x] == ' ') wrap = RIGHT;
+            }
+            else if (dir_y > 0)
+            {
+                if (new_y == height || temp_board[new_y][new_x] == ' ') wrap = UP;
+            }
+            else if (dir_y < 0)
+            {
+                if (new_y == -1 || temp_board[new_y][new_x] == ' ') wrap = DOWN;
+            }
+
+            // TO DO: Handle wrapping
 
             if (temp_board[new_y][new_x] == '.')
             {
