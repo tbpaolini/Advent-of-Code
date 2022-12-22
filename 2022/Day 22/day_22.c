@@ -149,6 +149,9 @@ int main(int argc, char **argv)
     BoardNode *temp_exits[height][width];
     memset(temp_exits, 0, sizeof(temp_exits));
     int64_t node_id = 0;    // Position on the 'temp_exits' array
+
+    // Starting node on the graph
+    BoardNode *start_position = NULL;
     
     // Loop through all spaces of the board
     for (int64_t y = 0; y < height; y++)
@@ -160,6 +163,7 @@ int main(int argc, char **argv)
             {
                 board[node_id] = (BoardNode){.x = x, .y = y};   // Create a node
                 temp_exits[y][x] = &board[node_id];             // Store the node's pointer
+                if (node_id == 0) start_position = &board[node_id];
                 node_id++;
             }
             assert(node_id <= nodes_count);
