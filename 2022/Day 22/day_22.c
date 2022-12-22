@@ -159,43 +159,74 @@ int main(int argc, char **argv)
             {0, -1},    // Up
         };
 
-        for (size_t j = 0; j < 4; j++)
+        for (size_t exit = 0; exit < 4; exit++)
         {
-            const int64_t dir_x = my_dir[j][0];
-            const int64_t dir_y = my_dir[j][1];
+            const int64_t dir_x = my_dir[exit][0];
+            const int64_t dir_y = my_dir[exit][1];
             
             int64_t new_x = x + dir_x;
             int64_t new_y = y + dir_y;
 
-            enum {NONE, RIGHT, DOWN, LEFT, UP} wrap = NONE;
+            enum {RIGHT, DOWN, LEFT, UP, NONE} wrap = NONE;
 
-            if (dir_x > 0)
+            switch (exit)
             {
-                if (new_x == width || temp_board[new_y][new_x] == ' ') wrap = LEFT;
-            }
-            else if (dir_x < 0)
-            {
-                if (new_x == -1 || temp_board[new_y][new_x] == ' ') wrap = RIGHT;
-            }
-            else if (dir_y > 0)
-            {
-                if (new_y == height || temp_board[new_y][new_x] == ' ') wrap = UP;
-            }
-            else if (dir_y < 0)
-            {
-                if (new_y == -1 || temp_board[new_y][new_x] == ' ') wrap = DOWN;
+                case 0: // Right exit
+                    if (new_x == width || temp_board[new_y][new_x] == ' ') wrap = LEFT;
+                    break;
+                
+                case 1: // Down exit
+                    if (new_y == height || temp_board[new_y][new_x] == ' ') wrap = UP;
+                    break;
+                
+                case 2: // Left exit
+                    if (new_x == -1 || temp_board[new_y][new_x] == ' ') wrap = RIGHT;
+                    break;
+                
+                case 3: // Up exit
+                    if (new_y == -1 || temp_board[new_y][new_x] == ' ') wrap = DOWN;
+                    break;
             }
 
-            // TO DO: Handle wrapping
+            switch (wrap)
+            {
+                case RIGHT:
+                    while (new_x != width-1 && temp_board[new_y][new_x+1] != ' ')
+                    {
+                        new_x += 1;
+                    }
+                    break;
+                
+                case DOWN:
+                    while (new_y != height-1 && temp_board[new_y+1][new_x] != ' ')
+                    {
+                        new_y += 1;
+                    }
+                    break;
+                
+                case LEFT:
+                    while (new_x != 0 && temp_board[new_y][new_x-1] != ' ')
+                    {
+                        new_x -= 1;
+                    }
+                    break;
+                
+                case UP:
+                    while (new_y != 0 && temp_board[new_y-1][new_x] != ' ')
+                    {
+                        new_y -= 1;
+                    }
+                    break;
+            }
 
             if (temp_board[new_y][new_x] == '.')
             {
-                node->exit[j] = temp_exits[new_y][new_x];
+                node->exit[exit] = temp_exits[new_y][new_x];
             }
             else
             {
                 assert(temp_board[new_y][new_x] == '#');
-                node->exit[j] = NULL;
+                node->exit[exit] = NULL;
             }
         }
     }
