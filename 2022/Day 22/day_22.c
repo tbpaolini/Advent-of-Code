@@ -22,10 +22,17 @@ typedef struct BoardInstruction
     enum {MOVE, TURN} type; // Whether to move or turn
 } BoardInstruction;
 
+// Current position on the board
+typedef struct BoardPosition
+{
+    BoardNode *node;    // Pointer to the current node on the board's graph
+    int64_t facing;     // Direction facing to (0 = right; 1 = down; 2 = left; 3 = top)
+} BoardPosition;
+
 int main(int argc, char **argv)
 {
     // Open the input file
-    FILE *input = fopen("input.txt", "rt");
+    FILE *input = fopen("test.txt", "rt");
     char next_char = fgetc(input);
 
     int64_t width  = 0;
@@ -151,7 +158,7 @@ int main(int argc, char **argv)
     int64_t node_id = 0;    // Position on the 'temp_exits' array
 
     // Starting node on the graph
-    BoardNode *start_position = NULL;
+    BoardNode *start_node = NULL;
     
     // Loop through all spaces of the board
     for (int64_t y = 0; y < height; y++)
@@ -163,7 +170,7 @@ int main(int argc, char **argv)
             {
                 board[node_id] = (BoardNode){.x = x, .y = y};   // Create a node
                 temp_exits[y][x] = &board[node_id];             // Store the node's pointer
-                if (node_id == 0) start_position = &board[node_id];
+                if (node_id == 0) start_node = &board[node_id]; // Node where we start from
                 node_id++;
             }
             assert(node_id <= nodes_count);
@@ -265,6 +272,41 @@ int main(int argc, char **argv)
             }
         }
     }
+
+    // Initial position
+    BoardPosition current_pos = {
+        .node = start_node, // The most top left available space of the board
+        .facing = 0         // Facing right
+    };
+
+    // Process the instructions
+    for (size_t i = 0; i < instructions_count; i++)
+    {
+        BoardInstruction movement = instruction[i];
+        if (movement.type == MOVE)
+        {
+            int64_t steps = movement.value;
+            for (int64_t i = 0; i < steps; i++)
+            {
+                const int64_t dir = current_pos.facing;
+                BoardNode *exit = current_pos.node->exit[dir];
+                if (exit) current_pos.node = exit;
+            }
+        }
+        else if (movement.type == TURN)
+        {
+            current_pos.facing += movement.value;
+            if (current_pos.facing < 0) current_pos.facing = 3;
+            if (current_pos.facing > 3) current_pos.facing = 0;
+        }
+        else
+        {
+            fprintf(stderr, "Error: Illegal movement\n");
+            abort();
+        }
+    }
+
+    int64_t password = 1000 * (current_pos.node->y + 1) + 4 * (current_pos.node->x + 1) + current_pos.facing;
 
     free(instruction);
     free(board);
