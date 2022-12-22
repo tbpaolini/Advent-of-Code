@@ -10,9 +10,9 @@
 // A node on the board
 typedef struct BoardNode
 {
-    int64_t row;                // Row number
-    int64_t column;             // Column number
-    struct BoardNode *exit[4];  // Pointers to the nodes this one connects to: {right, down, left, top}
+    int64_t x;  // Horizontal coordinate (0-indexed)
+    int64_t y;  // Vertical coordinate (0-indexed)
+    struct BoardNode *exit[4];  // Pointers to the nodes this one connects to: {right, down, left, up}
 } BoardNode;
 
 // An instruction for how to move on the board
@@ -40,7 +40,7 @@ int main(int argc, char **argv)
         while (next_char != '\n')
         {
             char_count++;
-            if (next_char != ' ') nodes_count++;
+            if (next_char == '.') nodes_count++;
             next_char = fgetc(input);
         }
         
@@ -72,16 +72,18 @@ int main(int argc, char **argv)
         abort();
     }
 
-    int64_t x = 0;
-    int64_t y = 0;
-    
     for (int64_t y = 0; y < height; y++)
     {
+        int64_t x = 0;
         while ( (next_char = fgetc(input)) != '\n')
         {
+            if (next_char != ' ' && next_char != '.' && next_char != '#')
+            {
+                fprintf(stderr, "Error: Malformatted input file\n");
+                abort();
+            }
             temp_board[y][x++] = next_char;
         }
-        x = 0;
     }
 
     fgetc(input);
@@ -120,6 +122,63 @@ int main(int argc, char **argv)
             abort();
         }
         assert(buff_id <= sizeof(buffer));
+    }
+
+    fclose(input);
+
+    BoardNode *temp_exits[height][width];
+    memset(temp_exits, 0, sizeof(temp_exits));
+    
+    int64_t node_id = 0;
+    
+    for (int64_t y = 0; y < height; y++)
+    {
+        for (int64_t x = 0; x < width; x++)
+        {
+            if (temp_board[y][x] == '.')
+            {
+                board[node_id] = (BoardNode){.x = x, .y = y};
+                temp_exits[y][x] = &board[node_id];
+                node_id++;
+            }
+            assert(node_id <= nodes_count);
+        }
+    }
+
+    for (int64_t i = 0; i < nodes_count; i++)
+    {
+        BoardNode *node = &board[i];
+        const int64_t x = node->x;
+        const int64_t y = node->y;
+        if (temp_board[y][x] != '.') continue;
+
+        int64_t my_dir[4][2] = {
+            {+1, 0},    // Right
+            {0, +1},    // Down
+            {-1, 0},    // Left
+            {0, -1},    // Up
+        };
+
+        for (size_t j = 0; j < 4; j++)
+        {
+            const int64_t dir_x = my_dir[j][0];
+            const int64_t dir_y = my_dir[j][1];
+            
+            int64_t new_x = x + dir_x;
+            int64_t new_y = y + dir_y;
+
+            // TO DO: Wrap around
+
+            if (temp_board[new_y][new_x] == '.')
+            {
+                node->exit[j] = temp_exits[new_y][new_x];
+            }
+            else
+            {
+                assert(temp_board[new_y][new_x] == '#');
+                node->exit[j] = NULL;
+            }
+        }
     }
 
     free(instruction);
