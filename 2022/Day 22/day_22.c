@@ -53,16 +53,18 @@ int main(int argc, char **argv)
         next_char = fgetc(input);
     }
 
+    // Count how many instructions
     int64_t instructions_count = 1;
     while ( (next_char = fgetc(input)) != EOF )
     {
         if (isupper(next_char)) instructions_count += 2;
     }
 
+    // Temporary array for the board
     char temp_board[height][width];
     memset(temp_board, ' ', sizeof(temp_board));
-    rewind(input);
 
+    // Allocate memory for the graph and the instruction array
     BoardInstruction *instruction = (BoardInstruction*)calloc(instructions_count, sizeof(BoardInstruction));
     BoardNode *board = (BoardNode*)calloc(nodes_count, sizeof(BoardNode));
 
@@ -72,6 +74,9 @@ int main(int argc, char **argv)
         abort();
     }
 
+    rewind(input);
+
+    // Parse the board
     for (int64_t y = 0; y < height; y++)
     {
         int64_t x = 0;
@@ -86,25 +91,36 @@ int main(int argc, char **argv)
         }
     }
 
-    fgetc(input);
+    fgetc(input);   // Skip the blank line
     
-    char buffer[21];
-    size_t buff_id = 0;
+    // Buffer for storing the instruction's value
+    char buffer[22];    // Enough characters for a 64-bit signed integer
+    size_t buff_id = 0; // Position on the buffer
     buffer[0] = '\0';
-    size_t inst_id = 0;
+    
+    size_t inst_id = 0; // Counter of instructions
 
+    // Parse the instructions
     while (inst_id < instructions_count)
     {
+        // Next character on the input
         next_char = fgetc(input);
+        
         if (isdigit(next_char))
         {
+            // Add the digits to the buffer in sequence
             buffer[buff_id++] = next_char;
         }
         else if (next_char == 'L' || next_char == 'R' || next_char == '\n')
         {
+            // A non-digit character means that we have the whole numeric string
             buffer[buff_id++] = '\0';
             assert(buff_id <= sizeof(buffer));
+            
+            // Convert the string to numeric and add to the instruction array
             instruction[inst_id++] = (BoardInstruction){atol(buffer), MOVE};
+            
+            // Parse the direction to turn and add it to the instructions
             if (next_char == 'L')
             {
                 instruction[inst_id++] = (BoardInstruction){-1, TURN};
@@ -113,6 +129,8 @@ int main(int argc, char **argv)
             {
                 instruction[inst_id++] = (BoardInstruction){+1, TURN};
             }
+
+            // Reset the buffer
             buff_id = 0;
             buffer[0] = '\0';
         }
@@ -121,37 +139,43 @@ int main(int argc, char **argv)
             fprintf(stderr, "Error: Malformatted input file\n");
             abort();
         }
+
         assert(buff_id <= sizeof(buffer));
     }
 
     fclose(input);
 
+    // Temporary array to store the pointers to the nodes on the graph
     BoardNode *temp_exits[height][width];
     memset(temp_exits, 0, sizeof(temp_exits));
+    int64_t node_id = 0;    // Position on the 'temp_exits' array
     
-    int64_t node_id = 0;
-    
+    // Loop through all spaces of the board
     for (int64_t y = 0; y < height; y++)
     {
         for (int64_t x = 0; x < width; x++)
         {
+            // Check if this space is empty
             if (temp_board[y][x] == '.')
             {
-                board[node_id] = (BoardNode){.x = x, .y = y};
-                temp_exits[y][x] = &board[node_id];
+                board[node_id] = (BoardNode){.x = x, .y = y};   // Create a node
+                temp_exits[y][x] = &board[node_id];             // Store the node's pointer
                 node_id++;
             }
             assert(node_id <= nodes_count);
         }
     }
 
+    // Link the nodes to each other
     for (int64_t i = 0; i < nodes_count; i++)
     {
+        // Retrieve the node and its coordinates
         BoardNode *node = &board[i];
         const int64_t x = node->x;
         const int64_t y = node->y;
-        if (temp_board[y][x] != '.') continue;
+        assert(temp_board[y][x] == '.');
 
+        // The four possible exits of the node
         int64_t my_dir[4][2] = {
             {+1, 0},    // Right
             {0, +1},    // Down
@@ -159,16 +183,21 @@ int main(int argc, char **argv)
             {0, -1},    // Up
         };
 
+        // Check if we can use the exits and where they lead to
         for (size_t exit = 0; exit < 4; exit++)
         {
+            // Direction of the tentative movement
             const int64_t dir_x = my_dir[exit][0];
             const int64_t dir_y = my_dir[exit][1];
             
+            // Coordinates of the tentative destination
             int64_t new_x = x + dir_x;
             int64_t new_y = y + dir_y;
 
+            // Which direction the movement wraps to
             enum {RIGHT, DOWN, LEFT, UP, NONE} wrap = NONE;
 
+            // Check if the tentative destination is past the borders of the map
             switch (exit)
             {
                 case 0: // Right exit
@@ -188,6 +217,7 @@ int main(int argc, char **argv)
                     break;
             }
 
+            // If beyond a border, move until the opposite border
             switch (wrap)
             {
                 case RIGHT:
@@ -219,6 +249,7 @@ int main(int argc, char **argv)
                     break;
             }
 
+            // If arrived to an empty space, add a pointer to the exit node
             if (temp_board[new_y][new_x] == '.')
             {
                 node->exit[exit] = temp_exits[new_y][new_x];
