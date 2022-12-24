@@ -410,6 +410,8 @@ int main(int argc, char **argv)
             }
 
             // If arrived to an empty space, add a pointer to the exit node
+
+            // Part 1's destination
             if (temp_board[new_y][new_x] == '.')
             {
                 node->exit_p1[exit] = temp_exits[new_y][new_x];
@@ -418,6 +420,17 @@ int main(int argc, char **argv)
             {
                 assert(temp_board[new_y][new_x] == '#');
                 node->exit_p1[exit] = NULL;
+            }
+
+            // Part 2's destination
+            if (temp_board[cube_y][cube_x] == '.')
+            {
+                node->exit_p2[exit] = temp_exits[cube_y][cube_x];
+            }
+            else
+            {
+                assert(temp_board[cube_y][cube_x] == '#');
+                node->exit_p2[exit] = NULL;
             }
         }
     }
