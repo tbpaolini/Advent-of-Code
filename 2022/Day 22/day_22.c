@@ -360,18 +360,26 @@ int main(int argc, char **argv)
                         switch (quad_y) // Quadrant counting from the top
                         {
                             case 0:
-                                /* code */
+                                cube_x = face_x;
+                                cube_y = face_y + (2 * face_size);
+                                node->dir_change[exit] = RIGHT_DIR;
                                 break;
                             
                             case 1:
-                                /* code */
+                                cube_x = face_y;
+                                cube_y = face_x + (2 * face_size);
+                                node->dir_change[exit] = DOWN_DIR;
                                 break;
                             
                             case 2:
-                                /* code */
+                                cube_x = face_x + face_size;
+                                cube_y = face_y;
+                                node->dir_change[exit] = RIGHT_DIR;
                                 break;
                             case 3:
-                                /* code */
+                                cube_x = face_y + face_size;
+                                cube_y = face_x;
+                                node->dir_change[exit] = DOWN_DIR;
                                 break;
                         }
                         break;
@@ -448,3 +456,8 @@ int main(int argc, char **argv)
     
     return 0;
 }
+
+#undef RIGHT_DIR
+#undef DOWN_DIR
+#undef LEFT_DIR
+#undef UP_DIR
