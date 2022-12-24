@@ -441,25 +441,46 @@ int main(int argc, char **argv)
         .facing = 0         // Facing right
     };
 
+    BoardPosition current_pos_p2 = current_pos_p1;
+
     // Process the instructions
     for (size_t i = 0; i < instructions_count; i++)
     {
         BoardInstruction movement = instruction[i];
         if (movement.type == MOVE)
         {
+            // Amount of steps to take on the board
             int64_t steps = movement.value;
+            
+            // Keep moving until an wall is found
             for (int64_t i = 0; i < steps; i++)
             {
-                const int64_t dir = current_pos_p1.facing;
-                BoardNode *exit = current_pos_p1.node->exit_p1[dir];
-                if (exit) current_pos_p1.node = exit;
+                // Part 1:
+                const int64_t dir_p1 = current_pos_p1.facing;
+                BoardNode *exit_p1 = current_pos_p1.node->exit_p1[dir_p1];
+                if (exit_p1) current_pos_p1.node = exit_p1;
+
+                // Part 2:
+                const int64_t dir_p2 = current_pos_p2.facing;
+                BoardNode *exit_p2 = current_pos_p2.node->exit_p2[dir_p2];
+                const int64_t new_dir = current_pos_p2.node->dir_change[dir_p2];
+                if (new_dir > -1) current_pos_p2.facing = new_dir;  // Direction change if moving to another face
+                if (exit_p2) current_pos_p2.node = exit_p2;
             }
         }
         else if (movement.type == TURN)
         {
+            // Turning clockwise or counterclockwise
+
+            // Part 1:
             current_pos_p1.facing += movement.value;
             if (current_pos_p1.facing < 0) current_pos_p1.facing = 3;
             if (current_pos_p1.facing > 3) current_pos_p1.facing = 0;
+
+            // Part 2:
+            current_pos_p2.facing += movement.value;
+            if (current_pos_p2.facing < 0) current_pos_p2.facing = 3;
+            if (current_pos_p2.facing > 3) current_pos_p2.facing = 0;
         }
         else
         {
@@ -469,6 +490,8 @@ int main(int argc, char **argv)
     }
 
     int64_t password_p1 = 1000 * (current_pos_p1.node->y + 1) + 4 * (current_pos_p1.node->x + 1) + current_pos_p1.facing;
+    int64_t password_p2 = 1000 * (current_pos_p2.node->y + 1) + 4 * (current_pos_p2.node->x + 1) + current_pos_p2.facing;
+    // Part 2: 133400 (too low)
 
     free(instruction);
     free(board);
