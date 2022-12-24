@@ -290,20 +290,25 @@ int main(int argc, char **argv)
                 int64_t quad_x = x / face_size;
                 int64_t quad_y = y / face_size;
 
-                /* Quadrants: (quad_x, quad_y)
+                /* Quadrants: (quad_x, quad_y) 
+                 *
+                 *        (1,0) (2,0)
+                 *        (1,1)
+                 *  (0,2) (1,2)
+                 *  (0,3)
+                 *
+                 * (each quadrant represents a face of the cube)
+                 * */
 
-                          (1,0) (2,0)
-                          (1,1)
-                    (0,2) (1,2)
-                    (0,3)
-                */
-
+                // By default, going through an exit does not change the direction
+                // This value will be updated when we are moving into another face
                 node->dir_change[exit] = -1;
                 
+                // Which exit we are going into
                 switch (exit)
                 {
                     case RIGHT_DIR:
-                        switch (quad_y)
+                        switch (quad_y) // The quadrant counting from top
                         {
                             case 0:
                                 cube_x = face_x + face_size;
@@ -329,15 +334,57 @@ int main(int argc, char **argv)
                         break;
                     
                     case DOWN_DIR:
-                        /* code */
+                        switch (quad_x) // Quadrant counting from the left
+                        {
+                            case 0:
+                                /* code */
+                                break;
+                            
+                            case 1:
+                                /* code */
+                                break;
+                            
+                            case 2:
+                                /* code */
+                                break;
+                        }
                         break;
                     
                     case LEFT_DIR:
-                        /* code */
+                        switch (quad_y) // Quadrant counting from the top
+                        {
+                            case 0:
+                                /* code */
+                                break;
+                            
+                            case 1:
+                                /* code */
+                                break;
+                            
+                            case 2:
+                                /* code */
+                                break;
+                            case 3:
+                                /* code */
+                                break;
+                        }
                         break;
                     
                     case UP_DIR:
-                        /* code */
+                        switch (quad_x) // Quadrant counting from the left
+                        {
+                            case 0:
+                                /* code */
+                                break;
+                            
+                            case 1:
+                                /* code */
+                                break;
+                            
+                            case 2:
+                                /* code */
+                                break;
+                        }
                         break;
                 }
             }
