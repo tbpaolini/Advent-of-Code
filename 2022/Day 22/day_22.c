@@ -287,8 +287,8 @@ int main(int argc, char **argv)
                 int64_t face_y = y % face_size;
                 
                 // Determine the quadrant of the current face
-                int64_t quad_x = x / face_size;
-                int64_t quad_y = y / face_size;
+                int64_t quad_x = x / face_size; // Quadrant number counting from left
+                int64_t quad_y = y / face_size; // Quadrant number counting from top 
 
                 /* Quadrants: (quad_x, quad_y) 
                  *
@@ -337,15 +337,21 @@ int main(int argc, char **argv)
                         switch (quad_x) // Quadrant counting from the left
                         {
                             case 0:
-                                /* code */
+                                cube_x = face_y + (2 * face_size);
+                                cube_y = face_x;
+                                node->dir_change[exit] = LEFT_DIR;
                                 break;
                             
                             case 1:
-                                /* code */
+                                cube_x = face_y;
+                                cube_y = face_x + (3 * face_size);
+                                node->dir_change[exit] = LEFT_DIR;
                                 break;
                             
                             case 2:
-                                /* code */
+                                cube_x = face_y + face_size;
+                                cube_y = face_x + face_size;
+                                node->dir_change[exit] = LEFT_DIR;
                                 break;
                         }
                         break;
