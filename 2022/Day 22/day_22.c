@@ -12,7 +12,8 @@ typedef struct BoardNode
 {
     int64_t x;  // Horizontal coordinate (0-indexed)
     int64_t y;  // Vertical coordinate (0-indexed)
-    struct BoardNode *exit[4];  // Pointers to the nodes this one connects to: {right, down, left, up}
+    struct BoardNode *exit_p1[4];   // Pointers to the nodes this one connects to on Part 1: {right, down, left, up}
+    struct BoardNode *exit_p2[4];   // Pointers to the nodes this one connects to on Part 2: {right, down, left, up}
 } BoardNode;
 
 // An instruction for how to move on the board
@@ -263,18 +264,18 @@ int main(int argc, char **argv)
             // If arrived to an empty space, add a pointer to the exit node
             if (temp_board[new_y][new_x] == '.')
             {
-                node->exit[exit] = temp_exits[new_y][new_x];
+                node->exit_p1[exit] = temp_exits[new_y][new_x];
             }
             else
             {
                 assert(temp_board[new_y][new_x] == '#');
-                node->exit[exit] = NULL;
+                node->exit_p1[exit] = NULL;
             }
         }
     }
 
     // Initial position
-    BoardPosition current_pos = {
+    BoardPosition current_pos_p1 = {
         .node = start_node, // The most top left available space of the board
         .facing = 0         // Facing right
     };
@@ -288,16 +289,16 @@ int main(int argc, char **argv)
             int64_t steps = movement.value;
             for (int64_t i = 0; i < steps; i++)
             {
-                const int64_t dir = current_pos.facing;
-                BoardNode *exit = current_pos.node->exit[dir];
-                if (exit) current_pos.node = exit;
+                const int64_t dir = current_pos_p1.facing;
+                BoardNode *exit = current_pos_p1.node->exit_p1[dir];
+                if (exit) current_pos_p1.node = exit;
             }
         }
         else if (movement.type == TURN)
         {
-            current_pos.facing += movement.value;
-            if (current_pos.facing < 0) current_pos.facing = 3;
-            if (current_pos.facing > 3) current_pos.facing = 0;
+            current_pos_p1.facing += movement.value;
+            if (current_pos_p1.facing < 0) current_pos_p1.facing = 3;
+            if (current_pos_p1.facing > 3) current_pos_p1.facing = 0;
         }
         else
         {
@@ -306,7 +307,7 @@ int main(int argc, char **argv)
         }
     }
 
-    int64_t password = 1000 * (current_pos.node->y + 1) + 4 * (current_pos.node->x + 1) + current_pos.facing;
+    int64_t password_p1 = 1000 * (current_pos_p1.node->y + 1) + 4 * (current_pos_p1.node->x + 1) + current_pos_p1.facing;
 
     free(instruction);
     free(board);
