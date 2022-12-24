@@ -14,6 +14,7 @@ typedef struct BoardNode
     int64_t y;  // Vertical coordinate (0-indexed)
     struct BoardNode *exit_p1[4];   // Pointers to the nodes this one connects to on Part 1: {right, down, left, up}
     struct BoardNode *exit_p2[4];   // Pointers to the nodes this one connects to on Part 2: {right, down, left, up}
+    int64_t dir_change[4];          // Part 2: To which direction taking the exit changes you
 } BoardNode;
 
 // An instruction for how to move on the board
@@ -29,6 +30,12 @@ typedef struct BoardPosition
     BoardNode *node;    // Pointer to the current node on the board's graph
     int64_t facing;     // Direction facing to (0 = right; 1 = down; 2 = left; 3 = top)
 } BoardPosition;
+
+// Directions
+#define RIGHT_DIR 0 // >
+#define DOWN_DIR  1 // v
+#define LEFT_DIR  2 // <
+#define UP_DIR    3 // ^
 
 int main(int argc, char **argv)
 {
@@ -178,6 +185,13 @@ int main(int argc, char **argv)
         }
     }
 
+    // Part 2: Determine the face size
+    int64_t face_size = width / 3;
+    assert(face_size == height / 4);
+    assert(width % 3 == 0);
+    assert(height % 4 == 0);
+    /* Note: All inputs of this puzzle have the exact same shape and size. */
+
     // Link the nodes to each other
     for (int64_t i = 0; i < nodes_count; i++)
     {
@@ -196,7 +210,7 @@ int main(int argc, char **argv)
         };
 
         // Check if we can use the exits and where they lead to
-        for (size_t exit = 0; exit < 4; exit++)
+        for (int64_t exit = 0; exit < 4; exit++)
         {
             // Direction of the tentative movement
             const int64_t dir_x = my_dir[exit][0];
@@ -207,58 +221,125 @@ int main(int argc, char **argv)
             int64_t new_y = y + dir_y;
 
             // Which direction the movement wraps to
-            enum {RIGHT, DOWN, LEFT, UP, NONE} wrap = NONE;
+            enum {W_RIGHT, W_DOWN, W_LEFT, W_UP, W_NONE} wrap = W_NONE;
 
             // Check if the tentative destination is past the borders of the map
             switch (exit)
             {
-                case 0: // Right exit
-                    if (new_x == width || temp_board[new_y][new_x] == ' ') wrap = LEFT;
+                case RIGHT_DIR:
+                    if (new_x == width || temp_board[new_y][new_x] == ' ') wrap = W_LEFT;
                     break;
                 
-                case 1: // Down exit
-                    if (new_y == height || temp_board[new_y][new_x] == ' ') wrap = UP;
+                case DOWN_DIR:
+                    if (new_y == height || temp_board[new_y][new_x] == ' ') wrap = W_UP;
                     break;
                 
-                case 2: // Left exit
-                    if (new_x == -1 || temp_board[new_y][new_x] == ' ') wrap = RIGHT;
+                case LEFT_DIR:
+                    if (new_x == -1 || temp_board[new_y][new_x] == ' ') wrap = W_RIGHT;
                     break;
                 
-                case 3: // Up exit
-                    if (new_y == -1 || temp_board[new_y][new_x] == ' ') wrap = DOWN;
+                case UP_DIR:
+                    if (new_y == -1 || temp_board[new_y][new_x] == ' ') wrap = W_DOWN;
                     break;
             }
 
-            // If beyond a border, move until the opposite border
+            // Part 1: If beyond a border, move until the opposite border
             switch (wrap)
             {
-                case RIGHT:
+                case W_RIGHT:
                     while (new_x != width-1 && temp_board[new_y][new_x+1] != ' ')
                     {
                         new_x += 1;
                     }
                     break;
                 
-                case DOWN:
+                case W_DOWN:
                     while (new_y != height-1 && temp_board[new_y+1][new_x] != ' ')
                     {
                         new_y += 1;
                     }
                     break;
                 
-                case LEFT:
+                case W_LEFT:
                     while (new_x != 0 && temp_board[new_y][new_x-1] != ' ')
                     {
                         new_x -= 1;
                     }
                     break;
                 
-                case UP:
+                case W_UP:
                     while (new_y != 0 && temp_board[new_y-1][new_x] != ' ')
                     {
                         new_y -= 1;
                     }
                     break;
+            }
+
+            // Destination coordinates for Part 2
+            int64_t cube_x = new_x;
+            int64_t cube_y = new_y;
+            
+            // Part 2: If beyond a border, walk around the cube
+            if (wrap != W_NONE)
+            {
+                // The coordinates on the face
+                int64_t face_x = x % face_size;
+                int64_t face_y = y % face_size;
+                
+                // Determine the quadrant of the current face
+                int64_t quad_x = x / face_size;
+                int64_t quad_y = y / face_size;
+
+                /* Quadrants: (quad_x, quad_y)
+
+                          (1,0) (2,0)
+                          (1,1)
+                    (0,2) (1,2)
+                    (0,3)
+                */
+
+                node->dir_change[exit] = -1;
+                
+                switch (exit)
+                {
+                    case RIGHT_DIR:
+                        switch (quad_y)
+                        {
+                            case 0:
+                                cube_x = face_x + face_size;
+                                cube_y = face_y + (2 * face_size);
+                                node->dir_change[exit] = LEFT_DIR;
+                                break;
+                            case 1:
+                                cube_x = face_y + (2 * face_size);
+                                cube_y = face_x;
+                                node->dir_change[exit] = UP_DIR;
+                                break;
+                            case 2:
+                                cube_x = face_x + (2 * face_size);
+                                cube_y = face_y;
+                                node->dir_change[exit] = LEFT_DIR;
+                                break;
+                            case 3:
+                                cube_x = face_y + face_size;
+                                cube_y = face_x + (2 * face_size);
+                                node->dir_change[exit] = UP_DIR;
+                                break;
+                        }
+                        break;
+                    
+                    case DOWN_DIR:
+                        /* code */
+                        break;
+                    
+                    case LEFT_DIR:
+                        /* code */
+                        break;
+                    
+                    case UP_DIR:
+                        /* code */
+                        break;
+                }
             }
 
             // If arrived to an empty space, add a pointer to the exit node
