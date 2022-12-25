@@ -36,6 +36,7 @@ typedef struct BoardPosition
 #define DOWN_DIR  1 // v
 #define LEFT_DIR  2 // <
 #define UP_DIR    3 // ^
+// Note: I did not use an enum here because I wanted to ensure that those integers are signed.
 
 int main(int argc, char **argv)
 {
@@ -283,7 +284,6 @@ int main(int argc, char **argv)
             // By default, going through an exit does not change the direction (value = -1).
             // But when moving from one face to the other, this value will tell the new direction.
             int64_t dir_change = -1;
-            node->dir_change[exit] = dir_change;
             
             // Part 2: If beyond a border, walk around the cube
             if (wrap != W_NONE)
@@ -307,6 +307,8 @@ int main(int argc, char **argv)
                  * */
 
                 // Which exit we are going into
+                // Note: The subdirectory "Cube diagram" has a illustration
+                //       of how the cube faces are connected.
                 switch (exit)
                 {
                     case RIGHT_DIR:
@@ -468,10 +470,10 @@ int main(int argc, char **argv)
                 BoardNode *exit_p2 = current_pos_p2.node->exit_p2[dir_p2];
                 if (exit_p2)
                 {
-                    // Direction change if moving to another face
                     const int64_t new_dir = current_pos_p2.node->dir_change[dir_p2];
                     if (new_dir > -1)
                     {
+                        // Direction change if moving to another face
                         current_pos_p2.facing = new_dir;
                     }
                     current_pos_p2.node = exit_p2;
@@ -501,12 +503,12 @@ int main(int argc, char **argv)
 
     int64_t password_p1 = 1000 * (current_pos_p1.node->y + 1) + 4 * (current_pos_p1.node->x + 1) + current_pos_p1.facing;
     int64_t password_p2 = 1000 * (current_pos_p2.node->y + 1) + 4 * (current_pos_p2.node->x + 1) + current_pos_p2.facing;
-    // Part 2: 133400 (too low)
+
+    printf("Part 1: %ld\n", password_p1);
+    printf("Part 2: %ld\n", password_p2);
 
     free(instruction);
     free(board);
-    
-    printf("%ld\n", password_p2);
 
     return 0;
 }
