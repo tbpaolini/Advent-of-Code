@@ -312,7 +312,7 @@ int main(int argc, char **argv)
                         {
                             case 0:
                                 cube_x = face_x + face_size;
-                                cube_y = face_y + (2 * face_size);
+                                cube_y = (face_size - 1 - face_y) + (2 * face_size);
                                 node->dir_change[exit] = LEFT_DIR;
                                 break;
                             case 1:
@@ -322,7 +322,7 @@ int main(int argc, char **argv)
                                 break;
                             case 2:
                                 cube_x = face_x + (2 * face_size);
-                                cube_y = face_y;
+                                cube_y = face_size - 1 - face_y;
                                 node->dir_change[exit] = LEFT_DIR;
                                 break;
                             case 3:
@@ -337,8 +337,8 @@ int main(int argc, char **argv)
                         switch (quad_x) // Quadrant counting from the left
                         {
                             case 0:
-                                cube_x = face_y + (2 * face_size);
-                                cube_y = face_x;
+                                cube_x = (face_size - 1 - face_x) + (2 * face_size);
+                                cube_y = 0;
                                 node->dir_change[exit] = DOWN_DIR;
                                 break;
                             
@@ -360,8 +360,8 @@ int main(int argc, char **argv)
                         switch (quad_y) // Quadrant counting from the top
                         {
                             case 0:
-                                cube_x = face_x;
-                                cube_y = face_y + (2 * face_size);
+                                cube_x = 0;
+                                cube_y = (face_size - 1 - face_y) + (2 * face_size);
                                 node->dir_change[exit] = RIGHT_DIR;
                                 break;
                             
@@ -373,7 +373,7 @@ int main(int argc, char **argv)
                             
                             case 2:
                                 cube_x = face_x + face_size;
-                                cube_y = face_y;
+                                cube_y = face_size - 1 - face_y;
                                 node->dir_change[exit] = RIGHT_DIR;
                                 break;
                             case 3:
@@ -401,7 +401,7 @@ int main(int argc, char **argv)
                             
                             case 2:
                                 cube_x = face_x;
-                                cube_y = face_y + (3 * face_size);
+                                cube_y = (4 * face_size) - 1;
                                 node->dir_change[exit] = UP_DIR;
                                 break;
                         }
