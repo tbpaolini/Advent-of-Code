@@ -5,9 +5,6 @@
 #include <string.h>
 #include <assert.h>
 
-static const char SNAFU_BASE[] = {'=', '-', '0', '1', '2'};
-static const char *SNAFU = &SNAFU_BASE[0] + 2;
-
 // Check if a character represents a valid snafu digit
 static inline bool is_snafu(char digit)
 {
@@ -20,8 +17,8 @@ static int64_t snafu_to_decimal(char *snafu)
     // Amount of digits of the SNAFU string
     const int64_t snafu_len = strlen(snafu);
 
-    int64_t decimal = 0;
-    int64_t snafu_magnitude = 1;
+    int64_t decimal = 0;            // Accumulator for the result
+    int64_t snafu_magnitude = 1;    // Magnitude of the current SNAFU digit
 
     // Loop through the digits from right to left
     for (int64_t i = snafu_len - 1; i >= 0; i--)
@@ -73,6 +70,65 @@ static int64_t snafu_to_decimal(char *snafu)
     return decimal;
 }
 
+// Convert a decimal number to a SNAFU string
+// It is necessary to provide an output buffer for the string, and the buffer's size.
+// The function returns the amount of digits in the SNAFU.
+// Pass NULL as the buffer in order to just get the amount of digits, without actually converting.
+static size_t decimal_to_snafu(
+    int64_t decimal,    // Decimal number to be converted
+    char *snafu,        // Output buffer
+    size_t buffer_size  // Size of the output buffer
+)
+{
+    // Lookup table for converting a decimal value to a SNAFU digit
+    static const char SNAFU_BASE[] = {'=', '-', '0', '1', '2'};
+    static const char *SNAFU_TABLE = &SNAFU_BASE[0] + 2;
+    
+    if (decimal < 0)
+    {
+        fprintf(stderr, "Error: The decimal number cannot be negative.");
+        abort();
+    }
+    
+    // Check if the buffer is big enough
+    int64_t temp_val = decimal;
+    size_t count = 0;
+    
+    do
+    {
+        temp_val /= 5;
+        count++;
+    }
+    while (temp_val > 1);
+
+    if (snafu == NULL) return count;
+    
+    if (buffer_size < count + 1)
+    {
+        fprintf(stderr, "Error: Insufficient buffer size of '%lu' for decimal '%ld'\n", count, decimal);
+        abort();
+    }
+
+    // Writing position on the buffer
+    int64_t pos = count;
+    snafu[pos--] = '\0';
+
+    while (decimal > 0)
+    {
+        int64_t value = decimal % 5;
+        if (value >= 3) value -= 5;
+        
+        char snigit = SNAFU_TABLE[value];
+        assert(pos >= 0);
+        snafu[pos--] = snigit;
+
+        decimal -= value;
+        decimal /= 5;
+    }
+    
+    return count;
+}
+
 int main(int argc, char **argv)
 {
     FILE *input = fopen("input.txt", "rt");
@@ -86,6 +142,9 @@ int main(int argc, char **argv)
     }
 
     fclose(input);
+
+    char out[100];
+    decimal_to_snafu(total, out, 100);
     
     return 0;
 }
