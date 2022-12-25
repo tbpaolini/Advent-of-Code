@@ -28,7 +28,6 @@ static int64_t snafu_to_decimal(char *snafu)
     {
         // SNAFU digit == snigit :-)
         char snigit = snafu[i];
-        assert(is_snafu(snigit));
         
         // Value of the snigit in decimal
         int64_t value;
@@ -54,6 +53,9 @@ static int64_t snafu_to_decimal(char *snafu)
                 value = 2;
                 break;
             
+            case '\n':  // Ignore the newline at the end
+                if (i == snafu_len-1) continue;
+            
             default:
                 fprintf(stderr, "Error: Invalid SNAFU number '%s'\n", snafu);
                 abort();
@@ -73,6 +75,17 @@ static int64_t snafu_to_decimal(char *snafu)
 
 int main(int argc, char **argv)
 {
-    snafu_to_decimal("1=11-2");
+    FILE *input = fopen("input.txt", "rt");
+    char line[32];
+
+    int64_t total = 0;
+
+    while (fgets(line, sizeof(line), input))
+    {
+        total += snafu_to_decimal(line);
+    }
+
+    fclose(input);
+    
     return 0;
 }
