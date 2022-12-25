@@ -73,7 +73,7 @@ static int64_t snafu_to_decimal(char *snafu)
 // Convert a decimal number to a SNAFU string
 // It is necessary to provide an output buffer for the string, and the buffer's size.
 // The function returns the amount of digits in the SNAFU.
-// Pass NULL as the buffer in order to just get the amount of digits, without actually converting.
+// Pass NULL as the buffer in order to just get the maximum amount of digits that the output can has.
 static size_t decimal_to_snafu(
     int64_t decimal,    // Decimal number to be converted
     char *snafu,        // Output buffer
@@ -92,7 +92,7 @@ static size_t decimal_to_snafu(
     
     // Check if the buffer is big enough
     int64_t temp_val = decimal;
-    size_t count = 0;
+    size_t count = 0;   // Estimation of the amount of digits (will never be smaller than the actual amount)
     
     do
     {
@@ -110,20 +110,40 @@ static size_t decimal_to_snafu(
     }
 
     // Writing position on the buffer
-    int64_t pos = count;
-    snafu[pos--] = '\0';
+    // (we are going to write the string backwards)
+    int64_t pos = count+1;
+    snafu[pos--] = '\0';    // Null terminator of the string
 
+    // Convert to SNAFU digits
     while (decimal > 0)
     {
+        // Get the value of the current digit
+        // The order of values is: 2; 1; 0; -1; -2
         int64_t value = decimal % 5;
         if (value >= 3) value -= 5;
+        /* Note:
+            If the calculated value would be 4, then it becomes -1.
+            If it would be 3, it becomes -2.
+        */
         
+        // Look up for the corresponding SNAFU digit, and append it to the left of the string.
         char snigit = SNAFU_TABLE[value];
         assert(pos >= 0);
         snafu[pos--] = snigit;
 
+        // Discount the value from the decimal,
+        // then divide it by 5 to get to the next SNAFU digit
         decimal -= value;
         decimal /= 5;
+    }
+    
+    // The estimation of the amount of digits can be either the actual amount,
+    // or one more than that. If it is the later, we just move the string buffer
+    // by one character to the left.
+    if (pos == 0)
+    {
+        memmove(&snafu[0], &snafu[1], count);
+        count--;
     }
     
     return count;
@@ -136,15 +156,23 @@ int main(int argc, char **argv)
 
     int64_t total = 0;
 
+    // Parse the input line by line
     while (fgets(line, sizeof(line), input))
     {
+        // Convert the SNAFU value to decimal, and add it to the total
         total += snafu_to_decimal(line);
     }
 
     fclose(input);
 
-    char out[100];
-    decimal_to_snafu(total, out, 100);
+    // Convert the total back to SNAFU
+    char solution[128];
+    decimal_to_snafu(total, solution, sizeof(solution));
+
+    printf("Part 1: %s\n", solution);
+    printf("Part 2: Good luck on getting all stars from previous days :-)\n");
+
+    printf("\nMerry Christmas!\n");
     
     return 0;
 }
