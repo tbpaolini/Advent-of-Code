@@ -279,6 +279,12 @@ int main(int argc, char **argv)
             int64_t cube_x = new_x;
             int64_t cube_y = new_y;
             
+            // Direction change for Part 2
+            // By default, going through an exit does not change the direction (value = -1).
+            // But when moving from one face to the other, this value will tell the new direction.
+            int64_t dir_change = -1;
+            node->dir_change[exit] = dir_change;
+            
             // Part 2: If beyond a border, walk around the cube
             if (wrap != W_NONE)
             {
@@ -300,10 +306,6 @@ int main(int argc, char **argv)
                  * (each quadrant represents a face of the cube)
                  * */
 
-                // By default, going through an exit does not change the direction
-                // This value will be updated when we are moving into another face
-                node->dir_change[exit] = -1;
-                
                 // Which exit we are going into
                 switch (exit)
                 {
@@ -313,22 +315,22 @@ int main(int argc, char **argv)
                             case 0:
                                 cube_x = (2 * face_size) - 1;
                                 cube_y = (face_size - 1 - face_y) + (2 * face_size);
-                                node->dir_change[exit] = LEFT_DIR;
+                                dir_change = LEFT_DIR;
                                 break;
                             case 1:
                                 cube_x = face_y + (2 * face_size);
                                 cube_y = face_size - 1;
-                                node->dir_change[exit] = UP_DIR;
+                                dir_change = UP_DIR;
                                 break;
                             case 2:
                                 cube_x = (3 * face_size) - 1;
                                 cube_y = face_size - 1 - face_y;
-                                node->dir_change[exit] = LEFT_DIR;
+                                dir_change = LEFT_DIR;
                                 break;
                             case 3:
                                 cube_x = face_y + face_size;
                                 cube_y = (3 * face_size) - 1;
-                                node->dir_change[exit] = UP_DIR;
+                                dir_change = UP_DIR;
                                 break;
                         }
                         break;
@@ -339,19 +341,19 @@ int main(int argc, char **argv)
                             case 0:
                                 cube_x = (2 * face_size) + face_x;
                                 cube_y = 0;
-                                node->dir_change[exit] = DOWN_DIR;
+                                dir_change = DOWN_DIR;
                                 break;
                             
                             case 1:
                                 cube_x = face_size - 1;
                                 cube_y = face_x + (3 * face_size);
-                                node->dir_change[exit] = LEFT_DIR;
+                                dir_change = LEFT_DIR;
                                 break;
                             
                             case 2:
                                 cube_x = (2 * face_size) - 1;
                                 cube_y = face_x + face_size;
-                                node->dir_change[exit] = LEFT_DIR;
+                                dir_change = LEFT_DIR;
                                 break;
                         }
                         break;
@@ -362,24 +364,24 @@ int main(int argc, char **argv)
                             case 0:
                                 cube_x = 0;
                                 cube_y = (face_size - 1 - face_y) + (2 * face_size);
-                                node->dir_change[exit] = RIGHT_DIR;
+                                dir_change = RIGHT_DIR;
                                 break;
                             
                             case 1:
                                 cube_x = face_y;
                                 cube_y = 2 * face_size;
-                                node->dir_change[exit] = DOWN_DIR;
+                                dir_change = DOWN_DIR;
                                 break;
                             
                             case 2:
                                 cube_x = face_size;
                                 cube_y = face_size - 1 - face_y;
-                                node->dir_change[exit] = RIGHT_DIR;
+                                dir_change = RIGHT_DIR;
                                 break;
                             case 3:
                                 cube_x = face_y + face_size;
                                 cube_y = 0;
-                                node->dir_change[exit] = DOWN_DIR;
+                                dir_change = DOWN_DIR;
                                 break;
                         }
                         break;
@@ -390,19 +392,19 @@ int main(int argc, char **argv)
                             case 0:
                                 cube_x = face_size;
                                 cube_y = face_x + face_size;
-                                node->dir_change[exit] = RIGHT_DIR;
+                                dir_change = RIGHT_DIR;
                                 break;
                             
                             case 1:
                                 cube_x = 0;
                                 cube_y = face_x + (3 * face_size);
-                                node->dir_change[exit] = RIGHT_DIR;
+                                dir_change = RIGHT_DIR;
                                 break;
                             
                             case 2:
                                 cube_x = face_x;
                                 cube_y = (4 * face_size) - 1;
-                                node->dir_change[exit] = UP_DIR;
+                                dir_change = UP_DIR;
                                 break;
                         }
                         break;
@@ -426,6 +428,7 @@ int main(int argc, char **argv)
             if (temp_board[cube_y][cube_x] == '.')
             {
                 node->exit_p2[exit] = temp_exits[cube_y][cube_x];
+                node->dir_change[exit] = dir_change;
             }
             else
             {
@@ -463,9 +466,16 @@ int main(int argc, char **argv)
                 // Part 2:
                 const int64_t dir_p2 = current_pos_p2.facing;
                 BoardNode *exit_p2 = current_pos_p2.node->exit_p2[dir_p2];
-                const int64_t new_dir = current_pos_p2.node->dir_change[dir_p2];
-                if (new_dir > -1) current_pos_p2.facing = new_dir;  // Direction change if moving to another face
-                if (exit_p2) current_pos_p2.node = exit_p2;
+                if (exit_p2)
+                {
+                    // Direction change if moving to another face
+                    const int64_t new_dir = current_pos_p2.node->dir_change[dir_p2];
+                    if (new_dir > -1)
+                    {
+                        current_pos_p2.facing = new_dir;
+                    }
+                    current_pos_p2.node = exit_p2;
+                }
             }
         }
         else if (movement.type == TURN)
