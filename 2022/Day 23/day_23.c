@@ -95,7 +95,7 @@ static void ht_insert(ElfTable *table, const ElfCoord coordinate)
         // Stop if the coordinate is at the list's next position
         if (coord_equal(node->next->coord, coordinate))
         {
-            node->count++;
+            node->next->count++;
             return;
         }
 
@@ -131,7 +131,7 @@ static size_t ht_contains(ElfTable *table, const ElfCoord coordinate)
     while (node->next)
     {
         // Check if the coordinate is at the list's next position
-        if (coord_equal(node->next->coord, coordinate)) return node->count;
+        if (coord_equal(node->next->coord, coordinate)) return node->next->count;
 
         // Move to the next position
         node = node->next;
@@ -145,9 +145,10 @@ static size_t ht_contains(ElfTable *table, const ElfCoord coordinate)
 static void ht_remove(ElfTable *table, const ElfCoord coordinate)
 {
     ElfNode *node = ht_node(table, coordinate);
+    if (!node->count) return;
     ElfNode *previous_node = NULL;
 
-    if (node->count && coord_equal(node->coord, coordinate))
+    if (coord_equal(node->coord, coordinate))
     {
         // If we are at the first node of the list, the node is not freed
         // because it is stored directly on the table.
@@ -355,11 +356,11 @@ int main(int argc, char **argv)
         {
             // If there is an elf here, add the coordinate to the table
             ht_insert(elves, cur_coord);
-            assert(ht_contains(elves, cur_coord));
+            assert(ht_contains(elves, cur_coord) == 1);
         }
         else
         {
-            assert(!ht_contains(elves, cur_coord));
+            assert(ht_contains(elves, cur_coord) == 0);
         }
 
         if (cur_char == '\n')
