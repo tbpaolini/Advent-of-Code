@@ -252,10 +252,17 @@ static void do_round(ElfTable *elves, size_t amount)
     };
 
     static size_t decision[4][3] = {
-        {7, 0, 1},  // Move north
-        {3, 4, 5},  // Move south
-        {5, 6, 7},  // Move west
-        {1, 2, 3},  // Move east
+        {7, 0, 1},  // Check north
+        {3, 4, 5},  // Check south
+        {5, 6, 7},  // Check west
+        {1, 2, 3},  // Check east
+    };
+
+    static ElfCoord movement[4] = {
+        { 0, -1},   // Move north
+        { 0, +1},   // Move south
+        {-1,  0},   // Move west
+        {+1,  0},   // Move east
     };
 
     ElfTable *tentative_movements = ht_new(elves->capacity);
@@ -268,6 +275,7 @@ static void do_round(ElfTable *elves, size_t amount)
             ElfNode *elf = &elves->data[i];
             if (!elf->count) continue;
             elf->target = elf->coord;
+            ElfCoord target_coord;
 
             bool has_elf[8];
             for (size_t dir = 0; dir < 8; dir++)
@@ -283,35 +291,25 @@ static void do_round(ElfTable *elves, size_t amount)
             for (size_t face = 0; face < 4; face++)
             {
                 size_t my_dir = (elves->direction + face) % 4;
-                ElfCoord other_coord;
-                bool can_move = true;
+                bool can_move = false;
 
                 for (size_t pos = 0; pos < 3; pos++)
                 {
-                    const ElfCoord coord_offset = directions[decision[my_dir][pos]];
-                    other_coord = (ElfCoord){
-                        elf->coord.x + coord_offset.x,
-                        elf->coord.y + coord_offset.y,
-                    };
-
-                    if (ht_contains(elves, other_coord))
-                    {
-                        can_move = false;
-                    }
-
-                    if (!can_move) break;
+                    const size_t other_dir = decision[my_dir][pos];
+                    if (has_elf[other_dir]) break;
+                    if (pos == 2) can_move = true;
                 }
                 
                 if (can_move)
                 {
-                    elf->target = other_coord;
-                    ht_insert(tentative_movements, other_coord);
+                    const ElfCoord target_offset = movement[my_dir];
+                    elf->target = (ElfCoord){
+                        elf->coord.x + target_offset.x,
+                        elf->coord.y + target_offset.y,
+                    };
+                    ht_insert(tentative_movements, elf->target);
                     break;
                 }
-                // else if (face == 3)
-                // {
-                //     ht_insert(tentative_movements, elf->coord);
-                // }
             }
         }
 
@@ -341,7 +339,7 @@ static void do_round(ElfTable *elves, size_t amount)
 int main(int argc, char **argv)
 {
 
-    FILE *input = fopen("input.txt", "rt");
+    FILE *input = fopen("test_small.txt", "rt");
     char cur_char;                  // Current character on the input file
     ElfCoord cur_coord = {0, 0};    // Current coordinate on the map
 
@@ -377,6 +375,8 @@ int main(int argc, char **argv)
     }
 
     fclose(input);
+
+    do_round(elves, 3);
 
     ht_free(elves);
 
