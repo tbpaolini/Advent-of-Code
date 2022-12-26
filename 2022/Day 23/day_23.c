@@ -11,19 +11,20 @@ typedef struct ElfCoord {
     int64_t y;
 } ElfCoord;
 
-// An entry of the hash set
+// An entry of the hash table
 typedef struct ElfNode {
     struct ElfCoord coord;  // (x, y) coordinates
     struct ElfNode *next;   // Next entry on the linked list
-    bool used;              // Whether this entry has a coordinate
+    size_t count;           // How many elves in this coordinate
 } ElfNode;
 
-// A hash set for storing the coordinates of the elves
+// A hash table for storing the coordinates of the elves
 // Collisions are resolved by separate chaining (a linked list on each bucket).
-typedef struct ElfSet {
-    size_t capacity;         // How many buckets the set has
+typedef struct ElfTable {
+    size_t capacity;         // How many buckets the table has
+    size_t direction;        // Which direction the elves are considering
     struct ElfNode data[];   // Array of buckets
-} ElfSet;
+} ElfTable;
 
 // Hashing function: FNV-1a
 // Details: http://www.isthe.com/chongo/tech/comp/fnv/#FNV-1a
@@ -53,46 +54,54 @@ static inline bool coord_equal(const ElfCoord coord1, const ElfCoord coord2)
     return memcmp(&coord1, &coord2, sizeof(ElfCoord)) == 0;
 }
 
-// Given a coordinate, retrieve the bucket on the hash set where the coordinate should go
+// Given a coordinate, retrieve the bucket on the hash table where the coordinate should go
 // Note: This function does not resolve collisions.
-static inline ElfNode* hs_node(ElfSet *set, const ElfCoord coorddinate)
+static inline ElfNode* ht_node(ElfTable *table, const ElfCoord coorddinate)
 {
     const uint8_t *key = (uint8_t*)(&coorddinate);
-    const uint64_t index = hash_fnv1a(key, sizeof(ElfCoord)) % set->capacity;
-    return &set->data[index];
+    const uint64_t index = hash_fnv1a(key, sizeof(ElfCoord)) % table->capacity;
+    return &table->data[index];
 }
 
-// Create a new hash set
-// Note: Should be freed with 'hs_free()'
-static ElfSet* hs_new(size_t capacity)
+// Create a new hash table
+// Note: Should be freed with 'ht_free()'
+static ElfTable* ht_new(size_t capacity)
 {
-    const size_t set_size = sizeof(ElfSet) + (capacity * sizeof(ElfNode));
-    ElfSet *set = (ElfSet*)calloc(1, set_size);
-    set->capacity = capacity;
-    return set;
+    const size_t set_size = sizeof(ElfTable) + (capacity * sizeof(ElfNode));
+    ElfTable *table = (ElfTable*)calloc(1, set_size);
+    table->capacity = capacity;
+    return table;
 }
 
-// Insert a coordinate to the hash set
-static void hs_insert(ElfSet *set, const ElfCoord coordinate)
+// Insert a coordinate to the hash table
+static void ht_insert(ElfTable *table, const ElfCoord coordinate)
 {
     // The bucket where the coordinate should be
-    ElfNode *node = hs_node(set, coordinate);
+    ElfNode *node = ht_node(table, coordinate);
 
     // Stop if the coordinate is at the first entry of the list
-    if (node->used && coord_equal(node->coord, coordinate)) return;
+    if (node->count && coord_equal(node->coord, coordinate))
+    {
+        node->count++;
+        return;
+    }
     
     // Navigate until the end of the list
     while (node->next)
     {
         // Stop if the coordinate is at the list's next position
-        if (coord_equal(node->next->coord, coordinate)) return;
+        if (coord_equal(node->next->coord, coordinate))
+        {
+            node->count++;
+            return;
+        }
 
         // Move to the next position
         node = node->next;
     }
     
     // If the current node already has a coordinate, create a new node
-    if (node->used)
+    if (node->count)
     {
         node->next = (ElfNode*)calloc(1, sizeof(ElfNode));
         node = node->next;
@@ -100,47 +109,47 @@ static void hs_insert(ElfSet *set, const ElfCoord coordinate)
 
     // Store the coordinate
     node->coord = coordinate;
-    node->used = true;
+    node->count = 1;
 }
 
-// Check if a coordinate is in the hash set
-static bool hs_contains(ElfSet *set, const ElfCoord coordinate)
+// Check how many elves in coordinate of the hash table
+static size_t ht_contains(ElfTable *table, const ElfCoord coordinate)
 {
     // The bucket where the coordinate should be
-    ElfNode *node = hs_node(set, coordinate);
+    ElfNode *node = ht_node(table, coordinate);
     
     // Check if the coordinate is at the beginning of the list
-    if (node->used && coord_equal(node->coord, coordinate))
+    if (node->count && coord_equal(node->coord, coordinate))
     {
-        return true;
+        return node->count;
     }
     
     // Navigate through the list until the coordinate is found
     while (node->next)
     {
         // Check if the coordinate is at the list's next position
-        if (coord_equal(node->next->coord, coordinate)) return true;
+        if (coord_equal(node->next->coord, coordinate)) return node->count;
 
         // Move to the next position
         node = node->next;
     }
 
     // If the coordinate was not found
-    return false;
+    return 0;
 }
 
-// Remove a coordinate from the hash set
-static void hs_remove(ElfSet *set, const ElfCoord coordinate)
+// Remove a coordinate from the hash table
+static void ht_remove(ElfTable *table, const ElfCoord coordinate)
 {
-    ElfNode *node = hs_node(set, coordinate);
+    ElfNode *node = ht_node(table, coordinate);
     ElfNode *previous_node = NULL;
 
-    if (node->used && coord_equal(node->coord, coordinate))
+    if (node->count && coord_equal(node->coord, coordinate))
     {
         // If we are at the first node of the list, the node is not freed
-        // because it is stored directly on the set.
+        // because it is stored directly on the table.
         // Instead, we just flag the space as 'unused'.
-        node->used = false;
+        node->count--;
         return;
     }
     else
@@ -154,6 +163,9 @@ static void hs_remove(ElfSet *set, const ElfCoord coordinate)
         // If the node is occupied and its coordinate matches the searched value
         if (coord_equal(node->coord, coordinate))
         {
+            node->count--;
+            if (node->count) return;    // Do not delete the node if there are still elves here
+            
             if (node->next)
             {
                 // If there is a node after the current, copy its contents to the current node
@@ -169,8 +181,8 @@ static void hs_remove(ElfSet *set, const ElfCoord coordinate)
                 else
                 {
                     // If we are at the first node of the list, the node is not freed
-                    // because it is stored directly on the set
-                    node->used = false;
+                    // because it is stored directly on the table
+                    node->count = false;
                 }
 
                 // Free the unused node
@@ -190,9 +202,9 @@ static void hs_remove(ElfSet *set, const ElfCoord coordinate)
                 else
                 {
                     // If we are at the first node of the list, the node is not freed
-                    // because it is stored directly on the set.
+                    // because it is stored directly on the table.
                     // Instead, we just flag the space as 'unused'.
-                    node->used = false;
+                    node->count = false;
                     return;
                 }
             }
@@ -205,12 +217,12 @@ static void hs_remove(ElfSet *set, const ElfCoord coordinate)
     } while (node->next);
 }
 
-// Free the memory used by a hash set
-static void hs_free(ElfSet *set)
+// Free the memory used by a hash table
+static void ht_free(ElfTable *table)
 {
-    for (size_t i = 0; i < set->capacity; i++)
+    for (size_t i = 0; i < table->capacity; i++)
     {
-        ElfNode *node = set->data[i].next;
+        ElfNode *node = table->data[i].next;
         while (node)
         {
             ElfNode *next_node = node->next;
@@ -218,7 +230,50 @@ static void hs_free(ElfSet *set)
             node = next_node;
         }        
     }
-    free(set);
+    free(table);
+}
+
+// Perform a given amount of movement rounds
+static void do_round(ElfTable *elves, size_t amount)
+{
+    static ElfCoord directions[8] = {
+        { 0, -1},   // North
+        {+1, -1},   // Northeast
+        {+1,  0},   // East
+        {+1, +1},   // Southeast
+        { 0, +1},   // South
+        {-1, +1},   // Southwest
+        {-1,  0},   // West
+        {-1, -1},   // Northwest
+    };
+
+    static size_t decision[4][3] = {
+        {7, 0, 1},  // Move north
+        {3, 4, 5},  // Move south
+        {5, 6, 7},  // Move west
+        {1, 2, 3},  // Move east
+    };
+
+    for (size_t round = 0; round < amount; round++)
+    {
+        for (size_t i = 0; i < elves->capacity; i++)
+        {
+            const ElfNode *elf = &elves->data[i];
+            if (!elf->count) continue;
+
+            bool has_elf[8];
+            for (size_t dir = 0; dir < 8; dir++)
+            {
+                const ElfCoord coord = {
+                    elf->coord.x + directions[dir].x,
+                    elf->coord.y + directions[dir].y
+                };
+                
+                has_elf[dir] = ht_contains(elves, coord);
+            }
+        }
+    }
+    
 }
 
 int main(int argc, char **argv)
@@ -228,7 +283,7 @@ int main(int argc, char **argv)
     char cur_char;                  // Current character on the input file
     ElfCoord cur_coord = {0, 0};    // Current coordinate on the map
 
-    ElfSet *elves = hs_new(4096);   // Hash set to store the elves' coordinates on the map
+    ElfTable *elves = ht_new(4096);   // Hash table to store the elves' coordinates on the map
 
     // Parse the elves' positions from the imput
     while ( (cur_char = fgetc(input)) != EOF )
@@ -237,13 +292,13 @@ int main(int argc, char **argv)
         
         if (cur_char == '#')
         {
-            // If there is an elf here, add the coordinate to the set
-            hs_insert(elves, cur_coord);
-            assert(hs_contains(elves, cur_coord));
+            // If there is an elf here, add the coordinate to the table
+            ht_insert(elves, cur_coord);
+            assert(ht_contains(elves, cur_coord));
         }
         else
         {
-            assert(!hs_contains(elves, cur_coord));
+            assert(!ht_contains(elves, cur_coord));
         }
 
         if (cur_char == '\n')
@@ -261,7 +316,7 @@ int main(int argc, char **argv)
 
     fclose(input);
 
-    hs_free(elves);
+    ht_free(elves);
 
     return 0;
 }
