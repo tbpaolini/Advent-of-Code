@@ -39,9 +39,9 @@ static uint64_t hash_fnv1a(const uint8_t *key, const size_t length)
     // Loop through the bytes on the key
     for (size_t i = 0; i < length; i++)
     {
-        uint8_t current_byte = key[i];  // Move to the next byte
-        hash ^= current_byte;           // Bitwise XOR with the byte value
-        hash *= fnv_prime_64;           // Multiply by the FNV prime
+        const uint8_t current_byte = key[i];    // Move to the next byte
+        hash ^= current_byte;   // Bitwise XOR with the byte value
+        hash *= fnv_prime_64;   // Multiply by the FNV prime
     }
     
     return hash;
@@ -84,7 +84,10 @@ static void hs_insert(ElfSet *set, const ElfCoord coordinate)
     // Navigate until the end of the list
     while (node->next)
     {
-        if (coord_equal(node->coord, coordinate)) return;
+        // Stop if the coordinate is at the list's next position
+        if (coord_equal(node->next->coord, coordinate)) return;
+
+        // Move to the next position
         node = node->next;
     }
     
@@ -106,13 +109,19 @@ static bool hs_contains(ElfSet *set, const ElfCoord coordinate)
     // The bucket where the coordinate should be
     ElfNode *node = hs_node(set, coordinate);
     
+    // Check if the coordinate is at the beginning of the list
+    if (node->used && coord_equal(node->coord, coordinate))
+    {
+        return true;
+    }
+    
     // Navigate through the list until the coordinate is found
     while (node->next)
     {
-        if (node->used && coord_equal(node->coord, coordinate))
-        {
-            return true;
-        }
+        // Check if the coordinate is at the list's next position
+        if (coord_equal(node->next->coord, coordinate)) return true;
+
+        // Move to the next position
         node = node->next;
     }
 
@@ -168,7 +177,8 @@ static void hs_remove(ElfSet *set, const ElfCoord coordinate)
                 else
                 {
                     // If we are at the first node of the list, the node is not freed
-                    // because it is stored directly on the set
+                    // because it is stored directly on the set.
+                    // Instead, we just flag the space as 'unused'.
                     node->used = false;
                     return;
                 }
@@ -199,6 +209,41 @@ static void hs_free(ElfSet *set)
 
 int main(int argc, char **argv)
 {
+
+    FILE *input = fopen("input.txt", "rt");
+    char cur_char;                  // Current character on the input file
+    ElfCoord cur_coord = {0, 0};    // Current coordinate on the map
+
+    ElfSet *elves = hs_new(4096);   // Hash set to store the elves' coordinates on the map
+
+    while ( (cur_char = fgetc(input)) != EOF )
+    {
+        assert(cur_char == '.' || cur_char == '#' || cur_char == '\n');
+        
+        if (cur_char == '#')
+        {
+            hs_insert(elves, cur_coord);
+            assert(hs_contains(elves, cur_coord));
+        }
+        else
+        {
+            assert(!hs_contains(elves, cur_coord));
+        }
+
+        if (cur_char == '\n')
+        {
+            cur_coord.x = 0;
+            cur_coord.y++;
+        }
+        else
+        {
+            cur_coord.x++;
+        }
+    }
+
+    fclose(input);
+
+    hs_free(elves);
 
     return 0;
 }
