@@ -230,15 +230,16 @@ int main(int argc, char **argv)
 
     ElfSet *elves = hs_new(4096);   // Hash set to store the elves' coordinates on the map
 
+    // Parse the elves' positions from the imput
     while ( (cur_char = fgetc(input)) != EOF )
     {
         assert(cur_char == '.' || cur_char == '#' || cur_char == '\n');
         
         if (cur_char == '#')
         {
+            // If there is an elf here, add the coordinate to the set
             hs_insert(elves, cur_coord);
-            hs_remove(elves, cur_coord);
-            assert(!hs_contains(elves, cur_coord));
+            assert(hs_contains(elves, cur_coord));
         }
         else
         {
@@ -247,11 +248,13 @@ int main(int argc, char **argv)
 
         if (cur_char == '\n')
         {
+            // If at a line break, move to the beginning of the next row
             cur_coord.x = 0;
             cur_coord.y++;
         }
         else
         {
+            // Move to the next column, if not at a line break.
             cur_coord.x++;
         }
     }
