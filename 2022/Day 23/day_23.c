@@ -14,6 +14,7 @@ typedef struct ElfCoord {
 // An entry of the hash table
 typedef struct ElfNode {
     struct ElfCoord coord;  // (x, y) coordinates
+    struct ElfCoord target; // Coordinate the elf is considering to move into
     struct ElfNode *next;   // Next entry on the linked list
     size_t count;           // How many elves in this coordinate
 } ElfNode;
@@ -21,6 +22,7 @@ typedef struct ElfNode {
 // A hash table for storing the coordinates of the elves
 // Collisions are resolved by separate chaining (a linked list on each bucket).
 typedef struct ElfTable {
+    size_t size;             // Size in bytes of the data section of the table
     size_t capacity;         // How many buckets the table has
     size_t direction;        // Which direction the elves are considering
     struct ElfNode data[];   // Array of buckets
@@ -67,8 +69,9 @@ static inline ElfNode* ht_node(ElfTable *table, const ElfCoord coorddinate)
 // Note: Should be freed with 'ht_free()'
 static ElfTable* ht_new(size_t capacity)
 {
-    const size_t set_size = sizeof(ElfTable) + (capacity * sizeof(ElfNode));
-    ElfTable *table = (ElfTable*)calloc(1, set_size);
+    const size_t table_size = sizeof(ElfTable) + (capacity * sizeof(ElfNode));
+    ElfTable *table = (ElfTable*)calloc(1, table_size);
+    table->size = table_size;
     table->capacity = capacity;
     return table;
 }
@@ -254,12 +257,16 @@ static void do_round(ElfTable *elves, size_t amount)
         {1, 2, 3},  // Move east
     };
 
+    ElfTable *tentative_movements = ht_new(elves->capacity);
+
     for (size_t round = 0; round < amount; round++)
     {
+        // First half of the round: consider the 4 cardinal directions
         for (size_t i = 0; i < elves->capacity; i++)
         {
-            const ElfNode *elf = &elves->data[i];
+            ElfNode *elf = &elves->data[i];
             if (!elf->count) continue;
+            elf->target = elf->coord;
 
             bool has_elf[8];
             for (size_t dir = 0; dir < 8; dir++)
@@ -271,9 +278,63 @@ static void do_round(ElfTable *elves, size_t amount)
                 
                 has_elf[dir] = ht_contains(elves, coord);
             }
+
+            for (size_t face = 0; face < 4; face++)
+            {
+                size_t my_dir = (elves->direction + face) % 4;
+                ElfCoord other_coord;
+                bool can_move = true;
+
+                for (size_t pos = 0; pos < 3; pos++)
+                {
+                    const ElfCoord coord_offset = directions[decision[my_dir][pos]];
+                    other_coord = (ElfCoord){
+                        elf->coord.x + coord_offset.x,
+                        elf->coord.y + coord_offset.y,
+                    };
+
+                    if (ht_contains(elves, other_coord))
+                    {
+                        can_move = false;
+                    }
+
+                    if (!can_move) break;
+                }
+                
+                if (can_move)
+                {
+                    elf->target = other_coord;
+                    ht_insert(tentative_movements, other_coord);
+                    break;
+                }
+                // else if (face == 3)
+                // {
+                //     ht_insert(tentative_movements, elf->coord);
+                // }
+            }
         }
+
+        // Second half of the round: try moving to the chosen destination
+        for (size_t i = 0; i < elves->capacity; i++)
+        {
+            const ElfNode *elf = &elves->data[i];
+            if (!elf->count) continue;
+            if (coord_equal(elf->coord, elf->target)) continue;;
+
+            const size_t target_count = ht_contains(tentative_movements, elf->target);
+            
+            if (target_count == 1)
+            {
+                ht_remove(elves, elf->coord);
+                ht_insert(elves, elf->target);
+            }
+        }
+
+        memset(tentative_movements->data, 0, tentative_movements->size);
+        elves->direction = (elves->direction + 1) % 4;
     }
     
+    ht_free(tentative_movements);
 }
 
 int main(int argc, char **argv)
