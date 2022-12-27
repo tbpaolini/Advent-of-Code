@@ -57,15 +57,6 @@ static inline bool coord_equal(const ElfCoord coord1, const ElfCoord coord2)
     return memcmp(&coord1, &coord2, sizeof(ElfCoord)) == 0;
 }
 
-// Given a coordinate, retrieve the bucket on the hash table where the coordinate should go
-// Note: This function does not resolve collisions.
-static inline ElfNode* ht_node(ElfTable *table, const ElfCoord coorddinate)
-{
-    const uint8_t *key = (uint8_t*)(&coorddinate);
-    const uint64_t index = hash_fnv1a(key, sizeof(ElfCoord)) % table->capacity;
-    return &table->data[index];
-}
-
 // Create a new hash table
 // Note: Should be freed with 'ht_free()'
 static ElfTable* ht_new(size_t capacity)
@@ -75,6 +66,15 @@ static ElfTable* ht_new(size_t capacity)
     table->size = table_size - sizeof(ElfTable);
     table->capacity = capacity;
     return table;
+}
+
+// Given a coordinate, retrieve the bucket on the hash table where the coordinate should go
+// Note: This function does not resolve collisions.
+static inline ElfNode* ht_node(ElfTable *table, const ElfCoord coorddinate)
+{
+    const uint8_t *key = (uint8_t*)(&coorddinate);
+    const uint64_t index = hash_fnv1a(key, sizeof(ElfCoord)) % table->capacity;
+    return &table->data[index];
 }
 
 // Insert a coordinate to the hash table
@@ -148,9 +148,6 @@ static size_t ht_contains(ElfTable *table, const ElfCoord coordinate)
 // Remove a coordinate from the hash table
 static void ht_remove(ElfTable *table, const ElfCoord coordinate)
 {
-    // Decrement the total coordinates counter
-    table->count--;
-    
     ElfNode *node = ht_node(table, coordinate);
     if (!node->count) return;
     ElfNode *previous_node = NULL;
@@ -161,71 +158,55 @@ static void ht_remove(ElfTable *table, const ElfCoord coordinate)
         // because it is stored directly on the table.
         // Instead, we just flag the space as 'unused'.
         node->count--;
+        table->count--;
+
+        // If there are no more elves here and there is a linked list on this node,
+        // move list's head to the next node
+        if (node->count == 0 && node->next)
+        {
+            ElfNode *old_node = node->next;
+            *node = *node->next;
+            free(old_node);
+        }
+        
         return;
     }
-    else
-    {
-        node = node->next;
-    }
+    
+    previous_node = node;
+    node = node->next;
 
     // Navigate through the list until the coordinate is found
-    do /* while (node->next); */
+    while (node)
     {
         // If the node is occupied and its coordinate matches the searched value
         if (coord_equal(node->coord, coordinate))
         {
             node->count--;
-            if (node->count) return;    // Do not delete the node if there are still elves here
+            table->count--;
+            if (node->count > 0) return;    // Do not delete the node if there are still elves here
             
             if (node->next)
             {
-                // If there is a node after the current, copy its contents to the current node
-                ElfNode *old_node = node->next;
-                node->coord = old_node->coord;
-                node->next = old_node->next;
-
-                if (previous_node)
-                {
-                    // Link the previous node to the next
-                    previous_node->next = old_node->next;
-                }
-                else
-                {
-                    // If we are at the first node of the list, the node is not freed
-                    // because it is stored directly on the table
-                    node->count = false;
-                }
-
-                // Free the unused node
-                free(old_node);
-                return;
+                // Link the previous node to the next
+                previous_node->next = node->next;
             }
             else
             {
-                if (previous_node)
-                {
-                    // If this is the last (but not the only) node on the list,
-                    // just remove the node from the list
-                    previous_node->next = NULL;
-                    free(node);
-                    return;
-                }
-                else
-                {
-                    // If we are at the first node of the list, the node is not freed
-                    // because it is stored directly on the table.
-                    // Instead, we just flag the space as 'unused'.
-                    node->count = false;
-                    return;
-                }
+                // We are at the tail of the list
+                previous_node->next = NULL;
             }
+
+            // Free the removed node
+            free(node);
+            return;
         }
 
         // Move to the next node
         previous_node = node;
         node = node->next;
-    
-    } while (node->next);
+    }
+
+    assert(false);
 }
 
 // Free the memory used by a hash table
