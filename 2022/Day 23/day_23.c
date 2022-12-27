@@ -359,7 +359,7 @@ static int64_t do_round(ElfTable *elves, size_t amount)
 int main(int argc, char **argv)
 {
 
-    FILE *input = fopen("test_big.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char cur_char;                  // Current character on the input file
     ElfCoord cur_coord = {0, 0};    // Current coordinate on the map
 
@@ -397,6 +397,7 @@ int main(int argc, char **argv)
     fclose(input);
 
     int64_t test = do_round(elves, 3);
+    // 5550 - too high
 
     ht_free(elves);
 
