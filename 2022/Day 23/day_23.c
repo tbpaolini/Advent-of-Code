@@ -24,6 +24,7 @@ typedef struct ElfNode {
 typedef struct ElfTable {
     size_t size;             // Size in bytes of the data section of the table
     size_t capacity;         // How many buckets the table has
+    size_t count;            // Amount of coordinates currently stored on the table
     size_t direction;        // Which direction the elves are considering
     struct ElfNode data[];   // Array of buckets
 } ElfTable;
@@ -71,7 +72,7 @@ static ElfTable* ht_new(size_t capacity)
 {
     const size_t table_size = sizeof(ElfTable) + (capacity * sizeof(ElfNode));
     ElfTable *table = (ElfTable*)calloc(1, table_size);
-    table->size = table_size;
+    table->size = table_size - sizeof(ElfTable);
     table->capacity = capacity;
     return table;
 }
@@ -264,7 +265,7 @@ static void print_map(ElfTable *elves)
     const int64_t width  = max.x - min.x + 1;
     const int64_t height = max.y - min.y + 1;
 
-    bool map[width][height];
+    bool map[height][width];
     memset(map, 0, sizeof(map));
 
     for (size_t i = 0; i < elves->capacity; i++)
@@ -320,6 +321,10 @@ static int64_t do_round(ElfTable *elves, size_t amount)
     print_map(elves);
     ElfTable *tentative_movements = ht_new(elves->capacity);
 
+    // Temporary array to store the movements that the elves are going to make
+    struct ChangeQueue {ElfCoord old; ElfCoord new;} changes[elves->count];
+    size_t change_id = 0;
+
     for (size_t round = 0; round < amount; round++)
     {
         // First half of the round: consider the 4 cardinal directions
@@ -327,7 +332,6 @@ static int64_t do_round(ElfTable *elves, size_t amount)
         {
             ElfNode *elf = &elves->data[i];
             if (!elf->count) continue;
-            elf->target = elf->coord;
             ElfCoord target_coord;
 
             bool has_elf[8];
@@ -360,35 +364,38 @@ static int64_t do_round(ElfTable *elves, size_t amount)
                 if (can_move)
                 {
                     const ElfCoord target_offset = movement[my_dir];
-                    elf->target = (ElfCoord){
+                    const ElfCoord target_coord = (ElfCoord){
                         elf->coord.x + target_offset.x,
-                        elf->coord.y + target_offset.y,
+                        elf->coord.y + target_offset.y
                     };
-                    ht_insert(tentative_movements, elf->target);
+
+                    changes[change_id++] = (struct ChangeQueue){
+                        .old = elf->coord,
+                        .new = target_coord
+                    };
+                    ht_insert(tentative_movements, target_coord);
+                    
                     break;
                 }
             }
         }
 
         // Second half of the round: try moving to the chosen destination
-        for (size_t i = 0; i < elves->capacity; i++)
+        for (size_t i = 0; i < change_id; i++)
         {
-            const ElfNode *elf = &elves->data[i];
-            if (!elf->count) continue;
-            if (coord_equal(elf->coord, elf->target)) continue;
-
-            const size_t target_count = ht_contains(tentative_movements, elf->target);
+            const size_t target_count = ht_contains(tentative_movements, changes[i].new);
             
             if (target_count == 1)
             {
-                ht_remove(elves, elf->coord);
-                ht_insert(elves, elf->target);
+                ht_remove(elves, changes[i].old);
+                ht_insert(elves, changes[i].new);
             }
         }
 
         print_map(elves);
         memset(tentative_movements->data, 0, tentative_movements->size);
         elves->direction = (elves->direction + 1) % 4;
+        change_id = 0;
     }
     
     ht_free(tentative_movements);
@@ -419,7 +426,7 @@ static int64_t do_round(ElfTable *elves, size_t amount)
 int main(int argc, char **argv)
 {
 
-    FILE *input = fopen("test_big.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char cur_char;                  // Current character on the input file
     ElfCoord cur_coord = {0, 0};    // Current coordinate on the map
 
@@ -456,7 +463,7 @@ int main(int argc, char **argv)
 
     fclose(input);
 
-    int64_t test = do_round(elves, 3);
+    int64_t test = do_round(elves, 10);
     // 5550 - too high
     // 4013 - too high
 
