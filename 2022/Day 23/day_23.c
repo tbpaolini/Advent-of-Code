@@ -238,7 +238,7 @@ static void ht_free(ElfTable *table)
 }
 
 // Perform a given amount of movement rounds
-static void do_round(ElfTable *elves, size_t amount)
+static int64_t do_round(ElfTable *elves, size_t amount)
 {
     static ElfCoord directions[8] = {
         { 0, -1},   // North
@@ -318,7 +318,7 @@ static void do_round(ElfTable *elves, size_t amount)
         {
             const ElfNode *elf = &elves->data[i];
             if (!elf->count) continue;
-            if (coord_equal(elf->coord, elf->target)) continue;;
+            if (coord_equal(elf->coord, elf->target)) continue;
 
             const size_t target_count = ht_contains(tentative_movements, elf->target);
             
@@ -334,12 +334,32 @@ static void do_round(ElfTable *elves, size_t amount)
     }
     
     ht_free(tentative_movements);
+
+    ElfCoord max = {INT64_MIN, INT64_MIN};
+    ElfCoord min = {INT64_MAX, INT64_MAX};
+    for (size_t i = 0; i < elves->capacity; i++)
+    {
+        const ElfNode *elf = &elves->data[i];
+        if (!elf->count) continue;
+
+        const int64_t x = elf->coord.x;
+        const int64_t y = elf->coord.y;
+
+        if (x > max.x) max.x = x;
+        if (y > max.y) max.y = y;
+        if (x < min.x) min.x = x;
+        if (y < min.y) min.y = y;
+    }
+    
+    const int64_t width  = max.x - min.x + 1;
+    const int64_t height = max.y - min.y + 1;
+    return (width * height);
 }
 
 int main(int argc, char **argv)
 {
 
-    FILE *input = fopen("test_small.txt", "rt");
+    FILE *input = fopen("test_big.txt", "rt");
     char cur_char;                  // Current character on the input file
     ElfCoord cur_coord = {0, 0};    // Current coordinate on the map
 
@@ -376,7 +396,7 @@ int main(int argc, char **argv)
 
     fclose(input);
 
-    do_round(elves, 3);
+    int64_t test = do_round(elves, 3);
 
     ht_free(elves);
 
