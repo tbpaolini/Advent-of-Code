@@ -241,14 +241,14 @@ static void ht_free(ElfTable *table)
 static int64_t do_round(ElfTable *elves, size_t amount)
 {
     static ElfCoord directions[8] = {
-        { 0, -1},   // North
-        {+1, -1},   // Northeast
-        {+1,  0},   // East
-        {+1, +1},   // Southeast
-        { 0, +1},   // South
-        {-1, +1},   // Southwest
-        {-1,  0},   // West
-        {-1, -1},   // Northwest
+        { 0, -1},   // 0: North
+        {+1, -1},   // 1: Northeast
+        {+1,  0},   // 2: East
+        {+1, +1},   // 3: Southeast
+        { 0, +1},   // 4: South
+        {-1, +1},   // 5: Southwest
+        {-1,  0},   // 6: West
+        {-1, -1},   // 7: Northwest
     };
 
     static size_t decision[4][3] = {
@@ -278,6 +278,7 @@ static int64_t do_round(ElfTable *elves, size_t amount)
             ElfCoord target_coord;
 
             bool has_elf[8];
+            bool any_elf = false;
             for (size_t dir = 0; dir < 8; dir++)
             {
                 const ElfCoord coord = {
@@ -286,7 +287,10 @@ static int64_t do_round(ElfTable *elves, size_t amount)
                 };
                 
                 has_elf[dir] = ht_contains(elves, coord);
+                if (has_elf[dir]) any_elf = true;
             }
+
+            if (!any_elf) continue;
 
             for (size_t face = 0; face < 4; face++)
             {
@@ -335,12 +339,14 @@ static int64_t do_round(ElfTable *elves, size_t amount)
     
     ht_free(tentative_movements);
 
+    int64_t elf_total = 0;
     ElfCoord max = {INT64_MIN, INT64_MIN};
     ElfCoord min = {INT64_MAX, INT64_MAX};
     for (size_t i = 0; i < elves->capacity; i++)
     {
         const ElfNode *elf = &elves->data[i];
         if (!elf->count) continue;
+        elf_total++;
 
         const int64_t x = elf->coord.x;
         const int64_t y = elf->coord.y;
@@ -353,13 +359,13 @@ static int64_t do_round(ElfTable *elves, size_t amount)
     
     const int64_t width  = max.x - min.x + 1;
     const int64_t height = max.y - min.y + 1;
-    return (width * height);
+    return (width * height) - elf_total;
 }
 
 int main(int argc, char **argv)
 {
 
-    FILE *input = fopen("input.txt", "rt");
+    FILE *input = fopen("test_big.txt", "rt");
     char cur_char;                  // Current character on the input file
     ElfCoord cur_coord = {0, 0};    // Current coordinate on the map
 
@@ -398,6 +404,7 @@ int main(int argc, char **argv)
 
     int64_t test = do_round(elves, 3);
     // 5550 - too high
+    // 4013 - too high
 
     ht_free(elves);
 
