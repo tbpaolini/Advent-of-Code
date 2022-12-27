@@ -79,6 +79,9 @@ static ElfTable* ht_new(size_t capacity)
 // Insert a coordinate to the hash table
 static void ht_insert(ElfTable *table, const ElfCoord coordinate)
 {
+    // Increment the total coordinates counter
+    table->count++;
+    
     // The bucket where the coordinate should be
     ElfNode *node = ht_node(table, coordinate);
 
@@ -144,6 +147,9 @@ static size_t ht_contains(ElfTable *table, const ElfCoord coordinate)
 // Remove a coordinate from the hash table
 static void ht_remove(ElfTable *table, const ElfCoord coordinate)
 {
+    // Decrement the total coordinates counter
+    table->count--;
+    
     ElfNode *node = ht_node(table, coordinate);
     if (!node->count) return;
     ElfNode *previous_node = NULL;
