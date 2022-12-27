@@ -318,7 +318,9 @@ static int64_t do_round(ElfTable *elves, size_t amount)
         {+1,  0},   // Move east
     };
 
+    #ifdef _DEBUG
     print_map(elves);
+    #endif
     ElfTable *tentative_movements = ht_new(elves->capacity);
 
     // Temporary array to store the movements that the elves are going to make
@@ -392,7 +394,9 @@ static int64_t do_round(ElfTable *elves, size_t amount)
             }
         }
 
+        #ifdef _DEBUG
         print_map(elves);
+        #endif
         memset(tentative_movements->data, 0, tentative_movements->size);
         elves->direction = (elves->direction + 1) % 4;
         change_id = 0;
@@ -400,14 +404,12 @@ static int64_t do_round(ElfTable *elves, size_t amount)
     
     ht_free(tentative_movements);
 
-    int64_t elf_total = 0;
     ElfCoord max = {INT64_MIN, INT64_MIN};
     ElfCoord min = {INT64_MAX, INT64_MAX};
     for (size_t i = 0; i < elves->capacity; i++)
     {
         const ElfNode *elf = &elves->data[i];
         if (!elf->count) continue;
-        elf_total++;
 
         const int64_t x = elf->coord.x;
         const int64_t y = elf->coord.y;
@@ -420,7 +422,7 @@ static int64_t do_round(ElfTable *elves, size_t amount)
     
     const int64_t width  = max.x - min.x + 1;
     const int64_t height = max.y - min.y + 1;
-    return (width * height) - elf_total;
+    return (width * height) - elves->count;
 }
 
 int main(int argc, char **argv)
