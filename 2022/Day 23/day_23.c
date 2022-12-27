@@ -237,6 +237,52 @@ static void ht_free(ElfTable *table)
     free(table);
 }
 
+static void print_map(ElfTable *elves)
+{
+    ElfCoord max = {INT64_MIN, INT64_MIN};
+    ElfCoord min = {INT64_MAX, INT64_MAX};
+    for (size_t i = 0; i < elves->capacity; i++)
+    {
+        const ElfNode *elf = &elves->data[i];
+        if (!elf->count) continue;
+
+        const int64_t x = elf->coord.x;
+        const int64_t y = elf->coord.y;
+
+        if (x > max.x) max.x = x;
+        if (y > max.y) max.y = y;
+        if (x < min.x) min.x = x;
+        if (y < min.y) min.y = y;
+    }
+    
+    const int64_t width  = max.x - min.x + 1;
+    const int64_t height = max.y - min.y + 1;
+
+    bool map[width][height];
+    memset(map, 0, sizeof(map));
+
+    for (size_t i = 0; i < elves->capacity; i++)
+    {
+        const ElfNode *elf = &elves->data[i];
+        if (!elf->count) continue;
+
+        const int64_t x = elf->coord.x;
+        const int64_t y = elf->coord.y;
+
+        map[y-min.y][x-min.x] = true;
+    }
+
+    for (int64_t y = 0; y < height; y++)
+    {
+        for (int64_t x = 0; x < width; x++)
+        {
+            putchar(map[y][x] ? '#' : '.');
+        }
+        putchar('\n');
+    }
+    putchar('\n');
+}
+
 // Perform a given amount of movement rounds
 static int64_t do_round(ElfTable *elves, size_t amount)
 {
@@ -265,6 +311,7 @@ static int64_t do_round(ElfTable *elves, size_t amount)
         {+1,  0},   // Move east
     };
 
+    print_map(elves);
     ElfTable *tentative_movements = ht_new(elves->capacity);
 
     for (size_t round = 0; round < amount; round++)
@@ -333,6 +380,7 @@ static int64_t do_round(ElfTable *elves, size_t amount)
             }
         }
 
+        print_map(elves);
         memset(tentative_movements->data, 0, tentative_movements->size);
         elves->direction = (elves->direction + 1) % 4;
     }
