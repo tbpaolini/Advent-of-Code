@@ -181,9 +181,10 @@ static void ht_remove(ElfTable *table, const ElfCoord coordinate)
     {
         if (node->next)
         {
+            node->next->previous = NULL;
+            if (node->next->next) node->next->next->previous = node;
             ElfNode *old_node = node->next;
             *node = *node->next;
-            node->previous = NULL;
             free(old_node);
         }
         else
@@ -196,7 +197,7 @@ static void ht_remove(ElfTable *table, const ElfCoord coordinate)
         ElfNode *old_node = node;
         if (node->next) node->next->previous = node->previous;
         node->previous->next = node->next;
-        free(node);
+        free(old_node);
     }
 }
 
@@ -479,9 +480,24 @@ int main(int argc, char **argv)
     ElfNode *test_dump[elves->count];
     ht_dump(elves, test_dump, elves->count);
 
+    ElfCoord coords[elves->count];
+    for (size_t i = 0; i < elves->count; i++)
+    {
+        size_t j = (i + 1) % elves->count;
+        coords[i] = test_dump[j]->coord;
+    }
+    
+    size_t count = elves->count;
+    for (size_t i = 0; i < count; i++)
+    {
+        assert(ht_contains(elves, coords[i]) == 1);
+        ht_remove(elves, coords[i]);
+    }
+    free(elves);
+
     // int64_t test = do_round(elves, 10);
 
-    ht_free(elves);
+    // ht_free(elves);
 
     return 0;
 }
