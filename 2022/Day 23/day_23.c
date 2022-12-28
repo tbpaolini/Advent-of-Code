@@ -200,6 +200,45 @@ static void ht_remove(ElfTable *table, const ElfCoord coordinate)
     }
 }
 
+// Store in a buffer the pointers to hash table's elements
+// Note: The size is the amount of pointers the buffer can hold.
+static void ht_dump(ElfTable *table, ElfNode **output_buffer, size_t buffer_size)
+{
+    // Position on the buffer
+    size_t pos = 0;
+    static bool printed_error = false;
+    
+    // Iterate over the buckets on the table
+    for (size_t i = 0; i < table->capacity; i++)
+    {
+        // Get the current bucket on the table
+        // If the count is zero, there are no elements on the bucket
+        ElfNode *node = &table->data[i];
+        if (node->count == 0) continue;
+
+        // Iterate over the linked list on the bucket
+        while (node)
+        {
+            // Stop if we arrived to the end of the buffer
+            if (pos == buffer_size)
+            {
+                if (!printed_error)
+                {
+                    // This error message is shown only once during the program's lifetime,
+                    // in order to avoid spamming the terminal.
+                    fprintf(stderr, "Error: Insufficient buffer size for dumping the hash table\n");
+                    printed_error = true;
+                }
+                return;
+            }
+
+            // Add the current node to the buffer and move to the next on the list
+            output_buffer[pos++] = node;
+            node = node->next;
+        }
+    }
+}
+
 // Free the memory used by a hash table
 static void ht_free(ElfTable *table)
 {
@@ -437,7 +476,10 @@ int main(int argc, char **argv)
 
     fclose(input);
 
-    int64_t test = do_round(elves, 10);
+    ElfNode *test_dump[elves->count];
+    ht_dump(elves, test_dump, elves->count);
+
+    // int64_t test = do_round(elves, 10);
 
     ht_free(elves);
 
