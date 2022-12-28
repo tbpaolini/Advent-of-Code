@@ -33,7 +33,7 @@ typedef struct ElfTable {
 /* Notes:
  *  There is a linked list on each bucket of the data section.
  *  The first node of that list is stored directly on the table,
- *  in order to avoid memory fragmentation.
+ *  in order to mitigate memory fragmentation.
  */
 
 // Hashing function: FNV-1a
@@ -519,10 +519,12 @@ static bool do_round(ElfTable *elves, size_t amount)
         if (y < min.y) min.y = y;
     }
     
-    // Calculate and return the amount of free space
+    // Calculate and store the amount of free space
     const int64_t width  = max.x - min.x + 1;
     const int64_t height = max.y - min.y + 1;
-    return (width * height) - elves_count;
+    elves->free_space = (width * height) - elves_count;
+    
+    return elf_has_moved;
 }
 
 int main(int argc, char **argv)
@@ -565,7 +567,18 @@ int main(int argc, char **argv)
 
     fclose(input);
 
-    int64_t test = do_round(elves, 10);
+    /******************** Part 1 ********************/
+    
+    // Perform 10 rounds of movements, then check how much space the elves covered
+    do_round(elves, 10);
+    printf("Part 1: %lu free space\n", elves->free_space);
+
+    /******************** Part 2 ********************/
+
+    // Keep performing rounds of movements until no elf has moved
+    uint64_t round_number = 11;
+    while (do_round(elves, 1)) round_number++;
+    printf("Part 2: %lu free space\n", round_number);
 
     ht_free(elves);
 
