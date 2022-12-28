@@ -141,6 +141,9 @@ static ElfNode* ht_find_node(ElfTable *table, const ElfCoord coorddinate, bool i
             .previous = previous_node
         };
 
+        // Link the prevous node to the new node
+        previous_node->next = node;
+
         // Increment the global counter
         table->count++;
     }
@@ -168,18 +171,19 @@ static size_t ht_contains(ElfTable *table, const ElfCoord coordinate)
 static void ht_remove(ElfTable *table, const ElfCoord coordinate)
 {
     ElfNode *node = ht_find_node(table, coordinate, false);
-    if (node == NULL) return;
+    if (node == NULL || node->count == 0) return;
     
     node->count--;
     table->count--;
     if (node->count > 0) return;
 
-    if (node->previous = NULL)
+    if (node->previous == NULL)
     {
         if (node->next)
         {
             ElfNode *old_node = node->next;
             *node = *node->next;
+            node->previous = NULL;
             free(old_node);
         }
         else
@@ -190,9 +194,9 @@ static void ht_remove(ElfTable *table, const ElfCoord coordinate)
     else
     {
         ElfNode *old_node = node;
-        node->previous->next = old_node->next;
-        if (old_node->next) old_node->next->previous = old_node->previous;
-        free(old_node);
+        if (node->next) node->next->previous = node->previous;
+        node->previous->next = node->next;
+        free(node);
     }
 }
 
