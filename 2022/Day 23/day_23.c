@@ -13,10 +13,10 @@ typedef struct ElfCoord {
 
 // An entry of the hash table
 typedef struct ElfNode {
-    struct ElfCoord coord;  // (x, y) coordinates
-    struct ElfCoord target; // Coordinate the elf is considering to move into
-    struct ElfNode *next;   // Next entry on the linked list
-    size_t count;           // How many elves in this coordinate
+    struct ElfCoord coord;      // (x, y) coordinates
+    size_t count;               // How many elves in this coordinate
+    struct ElfNode *next;       // Next entry on the linked list
+    struct ElfNode *previous;   // Previous entry on the linked list
 } ElfNode;
 
 // A hash table for storing the coordinates of the elves
@@ -69,144 +69,131 @@ static ElfTable* ht_new(size_t capacity)
 }
 
 // Given a coordinate, retrieve the bucket on the hash table where the coordinate should go
-// Note: This function does not resolve collisions.
-static inline ElfNode* ht_node(ElfTable *table, const ElfCoord coorddinate)
+// This function can optionally insert the coordinate on the table.
+static ElfNode* ht_find_node(ElfTable *table, const ElfCoord coorddinate, bool insert)
 {
     const uint8_t *key = (uint8_t*)(&coorddinate);
     const uint64_t index = hash_fnv1a(key, sizeof(ElfCoord)) % table->capacity;
-    return &table->data[index];
+    ElfNode *node = &table->data[index];
+
+    // Base case: the bucket has no other coordinates stored (no collision)
+    if (node->count == 0 || coord_equal(node->coord, coorddinate))
+    {
+        // When on insert mode: store the coordinate
+        if (insert)
+        {
+            if (node->count == 0)
+            {
+                // Create the entry if the bucket is empty
+                *node = (ElfNode){
+                    .coord = coorddinate,
+                    .count = 1,
+                    .next = NULL,
+                    .previous = NULL
+                };
+            }
+            else
+            {
+                // If the same coordinate is already there, increment its counter
+                node->count++;
+            }
+            
+            // Global counter for the table
+            table->count++;
+        }
+        
+        // Return a pointer to where the coordinate is on the table
+        return node;
+    }
+
+    // General case: collision resolution
+    ElfNode *previous_node = node;
+    node = node->next;
+    while (node)
+    {
+        // Check if the same coordinate is already stored on the node
+        if (coord_equal(node->coord, coorddinate))
+        {
+            // When on insert mode: increment the counters
+            if (insert)
+            {
+                node->count++;
+                table->count++;
+            }
+            
+            break;
+        }
+
+        // Move to the next node on the linked list
+        previous_node = node;
+        node = node->next;
+    }
+
+    // When on insert mode: if the coordinate was not found, append it to the linked list
+    if (node == NULL)
+    {
+        // Allocate and initialize the new node
+        node = (ElfNode*)malloc(sizeof(ElfNode));
+        *node = (ElfNode){
+            .coord = coorddinate,
+            .count = 1,
+            .next = NULL,
+            .previous = previous_node
+        };
+
+        // Increment the global counter
+        table->count++;
+    }
+    
+    // Return a pointer to where the coordinate is on the table
+    // If the coordinate is not found and not being inserted, then NULL is returned.
+    return node;
 }
 
 // Insert a coordinate to the hash table
 static void ht_insert(ElfTable *table, const ElfCoord coordinate)
 {
-    // Increment the total coordinates counter
-    table->count++;
-    
-    // The bucket where the coordinate should be
-    ElfNode *node = ht_node(table, coordinate);
-
-    // Stop if the coordinate is at the first entry of the list
-    if (node->count && coord_equal(node->coord, coordinate))
-    {
-        node->count++;
-        return;
-    }
-    
-    // Navigate until the end of the list
-    while (node->next)
-    {
-        // Stop if the coordinate is at the list's next position
-        if (coord_equal(node->next->coord, coordinate))
-        {
-            node->next->count++;
-            return;
-        }
-
-        // Move to the next position
-        node = node->next;
-    }
-    
-    // If the current node already has a coordinate, create a new node
-    if (node->count)
-    {
-        node->next = (ElfNode*)calloc(1, sizeof(ElfNode));
-        node = node->next;
-    }
-
-    // Store the coordinate
-    node->coord = coordinate;
-    node->count = 1;
+    ht_find_node(table, coordinate, true);
 }
 
 // Check how many elves in coordinate of the hash table
 static size_t ht_contains(ElfTable *table, const ElfCoord coordinate)
 {
-    // The bucket where the coordinate should be
-    ElfNode *node = ht_node(table, coordinate);
-    
-    // Check if the coordinate is at the beginning of the list
-    if (node->count && coord_equal(node->coord, coordinate))
-    {
-        return node->count;
-    }
-    
-    // Navigate through the list until the coordinate is found
-    while (node->next)
-    {
-        // Check if the coordinate is at the list's next position
-        if (coord_equal(node->next->coord, coordinate)) return node->next->count;
-
-        // Move to the next position
-        node = node->next;
-    }
-
-    // If the coordinate was not found
-    return 0;
+    ElfNode *node = ht_find_node(table, coordinate, false);
+    if (node == NULL) return 0;
+    else return node->count;
 }
 
 // Remove a coordinate from the hash table
 static void ht_remove(ElfTable *table, const ElfCoord coordinate)
 {
-    ElfNode *node = ht_node(table, coordinate);
-    if (!node->count) return;
-    ElfNode *previous_node = NULL;
+    ElfNode *node = ht_find_node(table, coordinate, false);
+    if (node == NULL) return;
+    
+    node->count--;
+    table->count--;
+    if (node->count > 0) return;
 
-    if (coord_equal(node->coord, coordinate))
+    if (node->previous = NULL)
     {
-        // If we are at the first node of the list, the node is not freed
-        // because it is stored directly on the table.
-        // Instead, we just flag the space as 'unused'.
-        node->count--;
-        table->count--;
-
-        // If there are no more elves here and there is a linked list on this node,
-        // move list's head to the next node
-        if (node->count == 0 && node->next)
+        if (node->next)
         {
             ElfNode *old_node = node->next;
             *node = *node->next;
             free(old_node);
         }
-        
-        return;
-    }
-    
-    previous_node = node;
-    node = node->next;
-
-    // Navigate through the list until the coordinate is found
-    while (node)
-    {
-        // If the node is occupied and its coordinate matches the searched value
-        if (coord_equal(node->coord, coordinate))
+        else
         {
-            node->count--;
-            table->count--;
-            if (node->count > 0) return;    // Do not delete the node if there are still elves here
-            
-            if (node->next)
-            {
-                // Link the previous node to the next
-                previous_node->next = node->next;
-            }
-            else
-            {
-                // We are at the tail of the list
-                previous_node->next = NULL;
-            }
-
-            // Free the removed node
-            free(node);
-            return;
+            memset(node, 0, sizeof(node));
         }
-
-        // Move to the next node
-        previous_node = node;
-        node = node->next;
     }
-
-    assert(false);
+    else
+    {
+        ElfNode *old_node = node;
+        node->previous->next = old_node->next;
+        if (old_node->next) old_node->next->previous = old_node->previous;
+        free(old_node);
+    }
 }
 
 // Free the memory used by a hash table
@@ -447,8 +434,6 @@ int main(int argc, char **argv)
     fclose(input);
 
     int64_t test = do_round(elves, 10);
-    // 5550 - too high
-    // 4013 - too high
 
     ht_free(elves);
 
