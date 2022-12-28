@@ -21,13 +21,20 @@ typedef struct ElfNode {
 
 // A hash table for storing the coordinates of the elves
 // Collisions are resolved by separate chaining (a linked list on each bucket).
+// (a bucket is a region on the table that can store data)
 typedef struct ElfTable {
-    size_t size;             // Size in bytes of the data section of the table
+    size_t size;             // Size in bytes of the whole struct (including the data section)
     size_t capacity;         // How many buckets the table has
     size_t count;            // Amount of coordinates currently stored on the table
+    size_t free_space;       // Amount of free spaces in the smallest rectangle that contains all elves
     size_t direction;        // Which direction the elves are considering
     struct ElfNode data[];   // Array of buckets
 } ElfTable;
+/* Notes:
+ *  There is a linked list on each bucket of the data section.
+ *  The first node of that list is stored directly on the table,
+ *  in order to avoid memory fragmentation.
+ */
 
 // Hashing function: FNV-1a
 // Details: http://www.isthe.com/chongo/tech/comp/fnv/#FNV-1a
@@ -61,9 +68,12 @@ static inline bool coord_equal(const ElfCoord coord1, const ElfCoord coord2)
 // Note: Should be freed with 'ht_free()'
 static ElfTable* ht_new(size_t capacity)
 {
+    // Allocate a memory block for the hash table, initialized to zero
     const size_t table_size = sizeof(ElfTable) + (capacity * sizeof(ElfNode));
     ElfTable *table = (ElfTable*)calloc(1, table_size);
-    table->size = table_size - sizeof(ElfTable);
+
+    // Initial parameters of the table
+    table->size = table_size;
     table->capacity = capacity;
     return table;
 }
@@ -72,6 +82,7 @@ static ElfTable* ht_new(size_t capacity)
 // This function can optionally insert the coordinate on the table.
 static ElfNode* ht_find_node(ElfTable *table, const ElfCoord coorddinate, bool insert)
 {
+    // Calculate the bucket where the coordinate should go
     const uint8_t *key = (uint8_t*)(&coorddinate);
     const uint64_t index = hash_fnv1a(key, sizeof(ElfCoord)) % table->capacity;
     ElfNode *node = &table->data[index];
@@ -159,11 +170,14 @@ static ElfNode* ht_find_node(ElfTable *table, const ElfCoord coorddinate, bool i
 static void ht_insert(ElfTable *table, const ElfCoord coordinate)
 {
     ht_find_node(table, coordinate, true);
+    // Note: when the third argument of that function is 'true',
+    //       the coordinate is inserted on the table.
 }
 
 // Check how many elves in coordinate of the hash table
 static size_t ht_contains(ElfTable *table, const ElfCoord coordinate)
 {
+    // Retrieve the coordinate from the table, and check its counter of elves
     ElfNode *node = ht_find_node(table, coordinate, false);
     if (node == NULL) return 0;
     else return node->count;
@@ -172,30 +186,44 @@ static size_t ht_contains(ElfTable *table, const ElfCoord coordinate)
 // Remove a coordinate from the hash table
 static void ht_remove(ElfTable *table, const ElfCoord coordinate)
 {
+    // Retrieve the coordinate to be removed from the table
     ElfNode *node = ht_find_node(table, coordinate, false);
     if (node == NULL || node->count == 0) return;
     
+    // Decrement the counters, if the coordinate exists on the table
     node->count--;
     table->count--;
+    
+    // If there are still elves there, do not remove the coordinate
     if (node->count > 0) return;
 
+    // Check if the coordinate is stored directly on the table
     if (node->previous == NULL)
     {
+        // If the node is directly on the table, the next node of the linked
+        // list will be copied to the table, then that node will be freed
         if (node->next)
         {
+            // Link the next node to the one after it and remove its 'previous' link
+            // (there are no 'previous' nodes when the node is the first on the list)
             node->next->previous = NULL;
             if (node->next->next) node->next->next->previous = node;
+
+            // Copy the contents of the next node to the table, then free that node
             ElfNode *old_node = node->next;
             *node = *node->next;
             free(old_node);
         }
         else
         {
+            // If there are no further nodes, just clear the node's memory region
             memset(node, 0, sizeof(node));
         }
     }
     else
     {
+        // If the node is not at the beginning of the list, link the previous
+        // and next nodes to each other, then free the node
         ElfNode *old_node = node;
         if (node->next) node->next->previous = node->previous;
         node->previous->next = node->next;
@@ -258,8 +286,11 @@ static void ht_free(ElfTable *table)
     free(table);
 }
 
+// Print the current elves positions to the terminal
+// (only if the _DEBUG macro is defined)
 static void print_map(ElfTable *elves)
 {
+    // Determine the maximum and minimum coordinates
     ElfCoord max = {INT64_MIN, INT64_MIN};
     ElfCoord min = {INT64_MAX, INT64_MAX};
     for (size_t i = 0; i < elves->capacity; i++)
@@ -276,9 +307,11 @@ static void print_map(ElfTable *elves)
         if (y < min.y) min.y = y;
     }
     
+    // Calculate the width and height of the map, based on the max and min coordinates
     const int64_t width  = max.x - min.x + 1;
     const int64_t height = max.y - min.y + 1;
 
+    // Add the elves to the map
     bool map[height][width];
     memset(map, 0, sizeof(map));
 
@@ -293,6 +326,7 @@ static void print_map(ElfTable *elves)
         map[y-min.y][x-min.x] = true;
     }
 
+    // Print the map's positions to the terminal
     for (int64_t y = 0; y < height; y++)
     {
         for (int64_t x = 0; x < width; x++)
@@ -305,8 +339,10 @@ static void print_map(ElfTable *elves)
 }
 
 // Perform a given amount of movement rounds
-static int64_t do_round(ElfTable *elves, size_t amount)
+// Function returns true if any elf has moved in the round, false otherwise.
+static bool do_round(ElfTable *elves, size_t amount)
 {
+    // The 8 spots adjascent to an elf
     static ElfCoord directions[8] = {
         { 0, -1},   // 0: North
         {+1, -1},   // 1: Northeast
@@ -318,6 +354,8 @@ static int64_t do_round(ElfTable *elves, size_t amount)
         {-1, -1},   // 7: Northwest
     };
 
+    // The spots on the directions where an elf is checking for other elves
+    // (3 spots on each of the 4 cardinal directions)
     static size_t decision[4][3] = {
         {7, 0, 1},  // Check north
         {3, 4, 5},  // Check south
@@ -325,6 +363,7 @@ static int64_t do_round(ElfTable *elves, size_t amount)
         {1, 2, 3},  // Check east
     };
 
+    // Offsets of the coordinate where an elf is trying to move to
     static ElfCoord movement[4] = {
         { 0, -1},   // Move north
         { 0, +1},   // Move south
@@ -335,6 +374,9 @@ static int64_t do_round(ElfTable *elves, size_t amount)
     #ifdef _DEBUG
     print_map(elves);
     #endif
+
+    // Whether any elf has moved
+    bool elf_has_moved = false;
 
     // Temporary array to store the movements that the elves are going to make
     struct ChangeQueue {ElfCoord old; ElfCoord new;} changes[elves->count];
@@ -358,30 +400,41 @@ static int64_t do_round(ElfTable *elves, size_t amount)
         // First half of the round: consider the 4 cardinal directions
         for (size_t i = 0; i < elves_count; i++)
         {
+            // Get the current elf
             ElfNode *elf = elves_array[i];
             assert(elf->count == 1);
+            
+            // The coordinate the elf is considering to move to
             ElfCoord target_coord;
 
-            bool has_elf[8];
-            bool any_elf = false;
+            bool has_elf[8];        // Which of the 8 directions has an elf there
+            bool any_elf = false;   // If there is at least one elf in those directions
+            
+            // Iterate over the 8 directions
             for (size_t dir = 0; dir < 8; dir++)
             {
+                // Coordinate of the spot on the direction
                 const ElfCoord coord = {
                     elf->coord.x + directions[dir].x,
                     elf->coord.y + directions[dir].y
                 };
                 
+                // Check if there is an elf on that spot
                 has_elf[dir] = ht_contains(elves, coord);
                 if (has_elf[dir]) any_elf = true;
             }
 
+            // If there isn't any adjascent elf, then the current elf skips the round
             if (!any_elf) continue;
 
+            // Check if there is any elf adjascent to the 4 cardinal directions (north, south, west, east)
             for (size_t face = 0; face < 4; face++)
             {
+                // Direction that the elf is considering to move
                 size_t my_dir = (elves->direction + face) % 4;
                 bool can_move = false;
 
+                // Check the 3 adjascent spots in that direction
                 for (size_t pos = 0; pos < 3; pos++)
                 {
                     const size_t other_dir = decision[my_dir][pos];
@@ -389,14 +442,17 @@ static int64_t do_round(ElfTable *elves, size_t amount)
                     if (pos == 2) can_move = true;
                 }
                 
+                // If there are no other elves on those spots, movement will be attempted
                 if (can_move)
                 {
+                    // Get the coordinate the elf is trying to move to
                     const ElfCoord target_offset = movement[my_dir];
                     const ElfCoord target_coord = (ElfCoord){
                         elf->coord.x + target_offset.x,
                         elf->coord.y + target_offset.y
                     };
 
+                    // Enqueue the movement attempt
                     changes[change_id++] = (struct ChangeQueue){
                         .old = elf->coord,
                         .new = target_coord
@@ -411,20 +467,28 @@ static int64_t do_round(ElfTable *elves, size_t amount)
         // Second half of the round: try moving to the chosen destination
         for (size_t i = 0; i < change_id; i++)
         {
+            // How many elves are trying to move to the considered coordinate
             const size_t target_count = ht_contains(tentative_movements, changes[i].new);
             
+            // Only perform the movement if exactly one elf is considering to move there 
             if (target_count == 1)
             {
                 ht_remove(elves, changes[i].old);
                 ht_insert(elves, changes[i].new);
             }
+
+            // Flag that a movement has happened
+            elf_has_moved = true;
         }
 
         #ifdef _DEBUG
         print_map(elves);
         #endif
         
+        // The next direction that the elves are going to consider
         elves->direction = (elves->direction + 1) % 4;
+
+        // Reset the data structures that keep track of the movements that the elves considered
         change_id = 0;
         ht_free(tentative_movements);
     }
