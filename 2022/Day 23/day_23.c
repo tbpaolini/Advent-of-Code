@@ -103,7 +103,9 @@ static ElfNode* ht_find_node(ElfTable *table, const ElfCoord coorddinate, bool i
         }
         
         // Return a pointer to where the coordinate is on the table
-        return node;
+        // If the coordinate is not found and not being inserted, then NULL is returned.
+        if (node->count == 0) return NULL;
+        else return node;
     }
 
     // General case: collision resolution
@@ -130,7 +132,7 @@ static ElfNode* ht_find_node(ElfTable *table, const ElfCoord coorddinate, bool i
     }
 
     // When on insert mode: if the coordinate was not found, append it to the linked list
-    if (node == NULL)
+    if (insert && node == NULL)
     {
         // Allocate and initialize the new node
         node = (ElfNode*)malloc(sizeof(ElfNode));
@@ -333,7 +335,6 @@ static int64_t do_round(ElfTable *elves, size_t amount)
     #ifdef _DEBUG
     print_map(elves);
     #endif
-    ElfTable *tentative_movements = ht_new(elves->capacity);
 
     // Temporary array to store the movements that the elves are going to make
     struct ChangeQueue {ElfCoord old; ElfCoord new;} changes[elves->count];
@@ -346,8 +347,11 @@ static int64_t do_round(ElfTable *elves, size_t amount)
     for (size_t round = 0; round < amount; round++)
     {
         assert(elves->count == elves_count);
+        
+        // Hash table to store the positions where the elves are considering to move to
+        ElfTable *tentative_movements = ht_new(elves->capacity);
 
-        // Get all the elements of the hash table that stores the coordinates
+        // Get all the elements of the hash table that stores the current coordinates
         ElfNode *elves_array[elves_count];
         ht_dump(elves, elves_array, elves_count);
         
@@ -419,12 +423,11 @@ static int64_t do_round(ElfTable *elves, size_t amount)
         #ifdef _DEBUG
         print_map(elves);
         #endif
-        memset(tentative_movements->data, 0, tentative_movements->size);
+        
         elves->direction = (elves->direction + 1) % 4;
         change_id = 0;
+        ht_free(tentative_movements);
     }
-    
-    ht_free(tentative_movements);
 
     ElfCoord max = {INT64_MIN, INT64_MIN};
     ElfCoord min = {INT64_MAX, INT64_MAX};
