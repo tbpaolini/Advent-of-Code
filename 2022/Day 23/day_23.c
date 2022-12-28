@@ -339,13 +339,23 @@ static int64_t do_round(ElfTable *elves, size_t amount)
     struct ChangeQueue {ElfCoord old; ElfCoord new;} changes[elves->count];
     size_t change_id = 0;
 
+    // Total amount of elves
+    // THIS VALUE SHOULD NEVER CHANGE IF THEIR POSITIONS ARE BEING CALCULATED PROPERLY
+    const size_t elves_count = elves->count;
+
     for (size_t round = 0; round < amount; round++)
     {
+        assert(elves->count == elves_count);
+
+        // Get all the elements of the hash table that stores the coordinates
+        ElfNode *elves_array[elves_count];
+        ht_dump(elves, elves_array, elves_count);
+        
         // First half of the round: consider the 4 cardinal directions
-        for (size_t i = 0; i < elves->capacity; i++)
+        for (size_t i = 0; i < elves_count; i++)
         {
-            ElfNode *elf = &elves->data[i];
-            if (!elf->count) continue;
+            ElfNode *elf = elves_array[i];
+            assert(elf->count == 1);
             ElfCoord target_coord;
 
             bool has_elf[8];
@@ -477,27 +487,9 @@ int main(int argc, char **argv)
 
     fclose(input);
 
-    ElfNode *test_dump[elves->count];
-    ht_dump(elves, test_dump, elves->count);
+    int64_t test = do_round(elves, 10);
 
-    ElfCoord coords[elves->count];
-    for (size_t i = 0; i < elves->count; i++)
-    {
-        size_t j = (i + 1) % elves->count;
-        coords[i] = test_dump[j]->coord;
-    }
-    
-    size_t count = elves->count;
-    for (size_t i = 0; i < count; i++)
-    {
-        assert(ht_contains(elves, coords[i]) == 1);
-        ht_remove(elves, coords[i]);
-    }
-    free(elves);
-
-    // int64_t test = do_round(elves, 10);
-
-    // ht_free(elves);
+    ht_free(elves);
 
     return 0;
 }
