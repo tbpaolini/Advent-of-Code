@@ -429,25 +429,36 @@ static int64_t do_round(ElfTable *elves, size_t amount)
         ht_free(tentative_movements);
     }
 
+    // Get all elements from the hash table of coordinates
+    ElfNode *elves_array[elves_count];
+    ht_dump(elves, elves_array, elves_count);
+    
+    // Maximum and minimum coordinates
     ElfCoord max = {INT64_MIN, INT64_MIN};
     ElfCoord min = {INT64_MAX, INT64_MAX};
-    for (size_t i = 0; i < elves->capacity; i++)
+    
+    // Iterate over all coordinates
+    for (size_t i = 0; i < elves_count; i++)
     {
-        const ElfNode *elf = &elves->data[i];
-        if (!elf->count) continue;
+        // Get the elf
+        const ElfNode *elf = elves_array[i];
+        assert(elf->count == 1);
 
+        // Elf's coordinates
         const int64_t x = elf->coord.x;
         const int64_t y = elf->coord.y;
 
+        // Update the maximum and minimum values
         if (x > max.x) max.x = x;
         if (y > max.y) max.y = y;
         if (x < min.x) min.x = x;
         if (y < min.y) min.y = y;
     }
     
+    // Calculate and return the amount of free space
     const int64_t width  = max.x - min.x + 1;
     const int64_t height = max.y - min.y + 1;
-    return (width * height) - elves->count;
+    return (width * height) - elves_count;
 }
 
 int main(int argc, char **argv)
