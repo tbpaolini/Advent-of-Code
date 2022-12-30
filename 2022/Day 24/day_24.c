@@ -25,6 +25,58 @@ typedef struct Blizzard
     {-1, 0}: top
 */
 
+static int64_t pathfind_bfs(
+    size_t width,                       // Width of the map
+    size_t height,                      // Height of the map
+    int64_t map[height][width],         // 2-D array representing the map
+    BasinCoord start,                   // Initial position of the map
+    BasinCoord end,                     // Destination on the map
+    size_t blizz_count,                 // Amount of blizzards
+    Blizzard blizzards[blizz_count],    // Array of blizzards
+    size_t empty_count,                 // Amount of empty spaces on the map
+    int64_t minute                      // Minute in which the map is currently on
+)
+{
+    BasinCoord coord = start;
+    
+    struct Queue
+    {
+        BasinCoord coord;
+        int64_t minute;
+    } queue[empty_count];
+
+    size_t queue_tail = 0;
+
+    queue[queue_tail++] = (struct Queue){
+        .coord = start,
+        .minute = minute+1
+    };
+
+    while (coord.x != end.x && coord.y != end.y)
+    {
+        const int64_t x = coord.x;
+        const int64_t y = coord.y;
+        
+        BasinCoord exits[4] = {
+            {x, y+1},
+            {x+1, y},
+            {x-1, y},
+            {x, y-1},
+        };
+
+        for (size_t i = 0; i < 4; i++)
+        {
+            const BasinCoord new = exits[i];
+            if (new.y > 0 && new.y < height && map[y][x] == 0)
+            {
+                queue[queue_tail++] = (struct Queue){{x, y}, minute+1};
+            }
+        }
+        
+    }
+    
+}
+
 int main(int argc, char **argv)
 {
     FILE *input = fopen("input.txt", "rt");
@@ -136,6 +188,10 @@ int main(int argc, char **argv)
     }
 
     fclose(input);
+
+    BasinCoord start_coord = {1, 0};
+    BasinCoord end_coord   = {width - 2, height - 1};
+    assert(map[start_coord.x][start_coord.y] == 0 && map[end_coord.x][end_coord.y] == 0);
 
     return 0;
 }
