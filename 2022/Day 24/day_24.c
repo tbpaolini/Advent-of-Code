@@ -149,7 +149,7 @@ static inline BasinCoord blizzard_position(Blizzard blizzard, int64_t minute, si
 static int64_t pathfind_bfs(
     size_t width,                       // Width of the map
     size_t height,                      // Height of the map
-    int64_t map[height][width],         // 2-D array representing the map
+    bool map[height][width],            // 2-D array representing the map
     BasinCoord start,                   // Initial position of the map
     BasinCoord end,                     // Destination on the map
     size_t blizz_count,                 // Amount of blizzards
@@ -161,8 +161,8 @@ static int64_t pathfind_bfs(
     const size_t num_states = least_common_multiple(width - 2, height - 2);
     
     // Cache for the possible blizzard states
-    bool blizz_states[num_states][width][height];
-    memset(blizz_states, 0, sizeof(blizz_states));
+    bool map_states[num_states][height][width];
+    memset(map_states, 0, sizeof(map_states));
 
     // Simulate all different states for all blizzards
     for (size_t time = 0; time < num_states; time++)
@@ -171,8 +171,18 @@ static int64_t pathfind_bfs(
         {
             // Calculate the blizzard's position at the current minute,
             // then store its position on the map
-            const BasinCoord blizz_coord = blizzard_position(blizzards[i], time, width, height);
-            blizz_states[time][blizz_coord.y][blizz_coord.x] = true;
+            const BasinCoord my_coord = blizzard_position(blizzards[i], time, width, height);
+            map_states[time][my_coord.y][my_coord.x] = true;
+
+        }
+        
+        // Add the walls to the simulated map
+        for (size_t y = 0; y < height; y++)
+        {
+            for (size_t x = 0; x < width; x++)
+            {
+                if (map[y][x]) map_states[time][y][x] = true;
+            }
         }
     }
     
@@ -268,7 +278,11 @@ int main(int argc, char **argv)
 
     rewind(input);
 
-    int64_t map[height][width];
+    // 2-D array of booleans to represent the map
+    // (a value of 'true' means that the position is blocked)
+    bool map[height][width];
+
+    // Array for storing the initial positions of the blizzards
     Blizzard blizzards[blizz_count];
 
     {
@@ -287,31 +301,31 @@ int main(int argc, char **argv)
             {
                 case '>':
                     blizzards[blizz_id++] = (Blizzard){my_coord, {0, +1}};
-                    map[y][x] = 1;
+                    map[y][x] = true;
                     break;
 
                 case '<':
                     blizzards[blizz_id++] = (Blizzard){my_coord, {0, -1}};
-                    map[y][x] = 1;
+                    map[y][x] = true;
                     break;
 
                 case 'v':
                     blizzards[blizz_id++] = (Blizzard){my_coord, {+1, 0}};
-                    map[y][x] = 1;
+                    map[y][x] = true;
                     break;
 
                 case '^':
                     blizzards[blizz_id++] = (Blizzard){my_coord, {-1, 0}};
-                    map[y][x] = 1;
+                    map[y][x] = true;
                     break;
                 
                 case '.':
-                    map[y][x] = 0;
+                    map[y][x] = false;
                     break;
                 
                 case '#':
                     assert(y == 0 || x == 0 || x == width - 1 || y == height -1);
-                    map[y][x] = -1;
+                    map[y][x] = true;
                     break;
                 
                 case '\n':
