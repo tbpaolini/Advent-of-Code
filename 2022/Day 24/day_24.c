@@ -25,6 +25,84 @@ typedef struct Blizzard
     {-1, 0}: top
 */
 
+typedef struct BasinNode
+{
+    BasinCoord coord;
+    int64_t minute;
+    struct BasinNode *next;
+} BasinNode;
+
+typedef struct BasinQueue
+{
+    struct BasinNode *head;
+    struct BasinNode *tail;
+} BasinQueue;
+
+static BasinQueue* queue_new()
+{
+    BasinQueue *queue = (BasinQueue*)calloc(1, sizeof(BasinQueue));
+    if (!queue)
+    {
+        fprintf(stderr, "Error: No enough memory\n");
+        abort();
+    }
+    return queue;
+}
+
+static inline void queue_push(BasinQueue *queue, BasinCoord coord, int64_t minute)
+{
+    BasinNode *node = (BasinNode*)malloc(sizeof(BasinNode));
+    if (!node)
+    {
+        fprintf(stderr, "Error: No enough memory\n");
+        abort();
+    }
+
+    *node = (BasinNode){
+        .coord = coord,
+        .minute = minute,
+        .next = NULL
+    };
+
+    if (queue->tail)
+    {
+        queue->tail->next = node;
+        queue->tail = node;
+    }
+    else
+    {
+        assert(queue->head == NULL);
+        queue->head = node;
+        queue->tail = node;
+    }
+}
+
+static inline bool queue_pop(BasinQueue *queue, BasinCoord *out_coord, int64_t *out_minute)
+{
+    if (!queue->head) return false;
+
+    *out_coord = queue->head->coord;
+    *out_minute = queue->head->minute;
+
+    BasinNode *old_node = queue->head;
+    queue->head = queue->head->next;
+    free(old_node);
+    
+    return true;
+}
+
+static inline void queue_destroy(BasinQueue *queue)
+{
+    BasinNode *node = queue->head;
+    while (node)
+    {
+        BasinNode *next_node = node->next;
+        free(node);
+        node = next_node;
+    }
+    free(queue);
+}
+
 static int64_t pathfind_bfs(
     size_t width,                       // Width of the map
     size_t height,                      // Height of the map
@@ -38,19 +116,6 @@ static int64_t pathfind_bfs(
 )
 {
     BasinCoord coord = start;
-    
-    struct Queue
-    {
-        BasinCoord coord;
-        int64_t minute;
-    } queue[empty_count];
-
-    size_t queue_tail = 0;
-
-    queue[queue_tail++] = (struct Queue){
-        .coord = start,
-        .minute = minute+1
-    };
 
     while (coord.x != end.x && coord.y != end.y)
     {
@@ -69,7 +134,7 @@ static int64_t pathfind_bfs(
             const BasinCoord new = exits[i];
             if (new.y > 0 && new.y < height && map[y][x] == 0)
             {
-                queue[queue_tail++] = (struct Queue){{x, y}, minute+1};
+                //
             }
         }
         
