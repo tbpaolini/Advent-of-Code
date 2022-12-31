@@ -103,6 +103,49 @@ static inline void queue_destroy(BasinQueue *queue)
     free(queue);
 }
 
+static size_t least_common_multiple(size_t value1, size_t value2)
+{
+    size_t small, big;
+    if (value1 < value2)
+    {
+        small = value1;
+        big = value2;
+    }
+    else
+    {
+        small = value2;
+        big = value1;
+    }
+
+    size_t lcm = 1;
+    
+    for (size_t i = 2; i <= small; i++)
+    {
+        if (big % i == 0 && small % i == 0)
+        {
+            big /= i;
+            small /= i;
+            lcm *= i;
+        }
+    }
+    
+    return lcm * small * big;
+}
+
+static inline BasinCoord blizzard_position(Blizzard blizzard, int64_t minute, size_t width, size_t height)
+{
+    int64_t x = (blizzard.offset.x-1 + minute*blizzard.direction.x) % (width -2);
+    int64_t y = (blizzard.offset.y-1 + minute*blizzard.direction.y) % (height-2);
+
+    if (x < 0) x += width -2;
+    if (y < 0) y += height-2;
+
+    x += 1;
+    y += 1;
+
+    return (BasinCoord){x, y};
+}
+
 static int64_t pathfind_bfs(
     size_t width,                       // Width of the map
     size_t height,                      // Height of the map
@@ -114,6 +157,25 @@ static int64_t pathfind_bfs(
     int64_t minute                      // Minute in which the map is currently on
 )
 {
+    // Amount of different states for the blizzards
+    const size_t num_states = least_common_multiple(width - 2, height - 2);
+    
+    // Cache for the possible blizzard states
+    bool blizz_states[num_states][width][height];
+    memset(blizz_states, 0, sizeof(blizz_states));
+
+    // Simulate all different states for all blizzards
+    for (size_t time = 0; time < num_states; time++)
+    {
+        for (size_t i = 0; i < blizz_count; i++)
+        {
+            // Calculate the blizzard's position at the current minute,
+            // then store its position on the map
+            const BasinCoord blizz_coord = blizzard_position(blizzards[i], time, width, height);
+            blizz_states[time][blizz_coord.y][blizz_coord.x] = true;
+        }
+    }
+    
     BasinCoord coord = start;
     BasinQueue *queue = queue_new();
 
