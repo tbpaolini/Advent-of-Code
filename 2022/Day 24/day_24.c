@@ -87,6 +87,7 @@ static inline bool queue_pop(BasinQueue *queue, BasinCoord *out_coord, int64_t *
     BasinNode *old_node = queue->head;
     queue->head = queue->head->next;
     free(old_node);
+    if (!queue->head) queue->tail = NULL;
     
     return true;
 }
@@ -154,7 +155,7 @@ static int64_t pathfind_bfs(
     BasinCoord end,                     // Destination on the map
     size_t blizz_count,                 // Amount of blizzards
     Blizzard blizzards[blizz_count],    // Array of blizzards
-    int64_t minute                      // Minute in which the map is currently on
+    size_t minute                       // Minute in which the map is currently on
 )
 {
     // Amount of different states for the blizzards
@@ -186,12 +187,13 @@ static int64_t pathfind_bfs(
         }
     }
     
+    minute += 1;
     BasinCoord coord = start;
     BasinQueue *queue = queue_new();
 
     while (coord.x != end.x && coord.y != end.y)
     {
-        // TO DO: Update blizzards' positions
+        size_t state = minute % num_states;
         
         const int64_t x = coord.x;
         const int64_t y = coord.y;
@@ -206,7 +208,7 @@ static int64_t pathfind_bfs(
         for (size_t i = 0; i < 4; i++)
         {
             const BasinCoord new = exits[i];
-            if (new.y > 0 && new.y < height && map[new.y][new.x] == 0)
+            if (new.y > 0 && new.y < height && map_states[state][new.y][new.x] == false)
             {
                 queue_push(queue, new, minute + 1);
             }
@@ -220,6 +222,7 @@ static int64_t pathfind_bfs(
         }
     }
     
+    return minute;
 }
 
 int main(int argc, char **argv)
@@ -301,22 +304,18 @@ int main(int argc, char **argv)
             {
                 case '>':
                     blizzards[blizz_id++] = (Blizzard){my_coord, {0, +1}};
-                    map[y][x] = true;
                     break;
 
                 case '<':
                     blizzards[blizz_id++] = (Blizzard){my_coord, {0, -1}};
-                    map[y][x] = true;
                     break;
 
                 case 'v':
                     blizzards[blizz_id++] = (Blizzard){my_coord, {+1, 0}};
-                    map[y][x] = true;
                     break;
 
                 case '^':
                     blizzards[blizz_id++] = (Blizzard){my_coord, {-1, 0}};
-                    map[y][x] = true;
                     break;
                 
                 case '.':
