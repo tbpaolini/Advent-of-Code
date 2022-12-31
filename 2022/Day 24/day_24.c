@@ -36,6 +36,7 @@ typedef struct BasinQueue
 {
     struct BasinNode *head;
     struct BasinNode *tail;
+    size_t length;
 } BasinQueue;
 
 static BasinQueue* queue_new()
@@ -75,6 +76,8 @@ static inline void queue_push(BasinQueue *queue, BasinCoord coord, int64_t minut
         queue->head = node;
         queue->tail = node;
     }
+
+    queue->length++;
 }
 
 static inline bool queue_pop(BasinQueue *queue, BasinCoord *out_coord, int64_t *out_minute)
@@ -88,6 +91,8 @@ static inline bool queue_pop(BasinQueue *queue, BasinCoord *out_coord, int64_t *
     queue->head = queue->head->next;
     free(old_node);
     if (!queue->head) queue->tail = NULL;
+
+    queue->length--;
     
     return true;
 }
@@ -197,25 +202,23 @@ static int64_t pathfind_bfs(
         const int64_t x = coord.x;
         const int64_t y = coord.y;
         
-        BasinCoord exits[4] = {
+        BasinCoord exits[5] = {
             {x, y+1},
             {x+1, y},
             {x-1, y},
             {x, y-1},
+            {x,   y},
         };
 
         bool wait = true;
-        for (size_t i = 0; i < 4; i++)
+        for (size_t i = 0; i < 5; i++)
         {
             const BasinCoord new = exits[i];
-            if (new.y > 0 && new.y < height && map_states[state][new.y][new.x])
+            if (new.y >= 0 && new.y < height && map_states[state][new.y][new.x])
             {
                 queue_push(queue, new, minute);
-                wait = false;
             }
         }
-
-        if (wait) continue;
         
         bool has_exit = queue_pop(queue, &coord, &minute);
         if (!has_exit)
@@ -223,6 +226,8 @@ static int64_t pathfind_bfs(
             fprintf(stderr, "Error: Path not found\n");
             return INT64_MAX;
         }
+
+        assert(queue->length <= 10000);
     }
     
     return minute;
@@ -230,7 +235,7 @@ static int64_t pathfind_bfs(
 
 int main(int argc, char **argv)
 {
-    FILE *input = fopen("test.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char line[256];
 
     int64_t width  = 0;
