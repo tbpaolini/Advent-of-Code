@@ -227,7 +227,7 @@ static int64_t pathfind_bfs(
 
 int main(int argc, char **argv)
 {
-    FILE *input = fopen("input.txt", "rt");
+    FILE *input = fopen("test.txt", "rt");
     char line[256];
 
     int64_t width  = 0;
