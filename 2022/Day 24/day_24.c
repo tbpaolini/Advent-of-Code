@@ -186,12 +186,12 @@ static int64_t pathfind_bfs(
         }
     }
     
-    minute += 1;
     BasinCoord coord = start;
     BasinQueue *queue = queue_new();
 
-    while (coord.x != end.x && coord.y != end.y)
+    while ( !(coord.x == end.x && coord.y == end.y) )
     {
+        minute += 1;
         size_t state = minute % num_states;
         
         const int64_t x = coord.x;
@@ -204,14 +204,18 @@ static int64_t pathfind_bfs(
             {x, y-1},
         };
 
+        bool wait = true;
         for (size_t i = 0; i < 4; i++)
         {
             const BasinCoord new = exits[i];
             if (new.y > 0 && new.y < height && map_states[state][new.y][new.x])
             {
-                queue_push(queue, new, minute + 1);
+                queue_push(queue, new, minute);
+                wait = false;
             }
         }
+
+        if (wait) continue;
         
         bool has_exit = queue_pop(queue, &coord, &minute);
         if (!has_exit)
