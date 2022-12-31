@@ -111,14 +111,16 @@ static int64_t pathfind_bfs(
     BasinCoord end,                     // Destination on the map
     size_t blizz_count,                 // Amount of blizzards
     Blizzard blizzards[blizz_count],    // Array of blizzards
-    size_t empty_count,                 // Amount of empty spaces on the map
     int64_t minute                      // Minute in which the map is currently on
 )
 {
     BasinCoord coord = start;
+    BasinQueue *queue = queue_new();
 
     while (coord.x != end.x && coord.y != end.y)
     {
+        // TO DO: Update blizzards' positions
+        
         const int64_t x = coord.x;
         const int64_t y = coord.y;
         
@@ -132,12 +134,18 @@ static int64_t pathfind_bfs(
         for (size_t i = 0; i < 4; i++)
         {
             const BasinCoord new = exits[i];
-            if (new.y > 0 && new.y < height && map[y][x] == 0)
+            if (new.y > 0 && new.y < height && map[new.y][new.x] == 0)
             {
-                //
+                queue_push(queue, new, minute + 1);
             }
         }
         
+        bool has_exit = queue_pop(queue, &coord, &minute);
+        if (!has_exit)
+        {
+            fprintf(stderr, "Error: Path not found\n");
+            return INT64_MAX;
+        }
     }
     
 }
@@ -256,7 +264,9 @@ int main(int argc, char **argv)
 
     BasinCoord start_coord = {1, 0};
     BasinCoord end_coord   = {width - 2, height - 1};
-    assert(map[start_coord.x][start_coord.y] == 0 && map[end_coord.x][end_coord.y] == 0);
+    assert(map[start_coord.y][start_coord.x] == 0 && map[end_coord.y][end_coord.x] == 0);
+
+    pathfind_bfs(width, height, map, start_coord, end_coord, blizz_count, blizzards, 0);
 
     return 0;
 }
