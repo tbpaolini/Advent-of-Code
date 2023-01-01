@@ -237,7 +237,7 @@ static int64_t pathfind_bfs(
     // Starting position and state on the map
     BasinCoord coord = start;
     BasinQueue *queue = queue_new();
-    size_t state = 0;
+    size_t state = minute % num_states;
 
     // Flag the starting position as "seen"
     seen[state][coord.y][coord.x] = true;
@@ -443,8 +443,21 @@ int main(int argc, char **argv)
     assert(map[start_coord.y][start_coord.x] && map[end_coord.y][end_coord.x]);
 
     // Find the shortest path between those two positions
-    int64_t solution_p1 = pathfind_bfs(width, height, map, start_coord, end_coord, blizz_count, blizzards, 0);
-    printf("Part 1: %ld minutes\n", solution_p1);
+    int64_t minute_p1 = pathfind_bfs(width, height, map, start_coord, end_coord, blizz_count, blizzards, 0);
+    printf("Part 1: %ld minutes\n", minute_p1);
+
+    /******************** Part 2 ********************/
+
+    // Current minute on the path (we start where we left from the Part 1)
+    int64_t minute_p2 = minute_p1;
+
+    // Path from the destination back to the start
+    minute_p2 = pathfind_bfs(width, height, map, end_coord, start_coord, blizz_count, blizzards, minute_p2);
+
+    // Path from the start to back to the destination
+    minute_p2 = pathfind_bfs(width, height, map, start_coord, end_coord, blizz_count, blizzards, minute_p2);
+
+    printf("Part 2: %ld minutes\n", minute_p2);
 
     return 0;
 }
