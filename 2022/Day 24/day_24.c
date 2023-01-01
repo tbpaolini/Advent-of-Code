@@ -25,20 +25,23 @@ typedef struct Blizzard
     {-1, 0}: top
 */
 
+// A node of the queue
 typedef struct BasinNode
 {
-    BasinCoord coord;
-    int64_t minute;
-    struct BasinNode *next;
+    BasinCoord coord;       // Current coordinate on the map
+    int64_t minute;         // Current minute on the path
+    struct BasinNode *next; // Next node on the queue
 } BasinNode;
 
+// A queue of nodes (first in, last out)
 typedef struct BasinQueue
 {
-    struct BasinNode *head;
-    struct BasinNode *tail;
+    struct BasinNode *head; // Oldest node on the queue
+    struct BasinNode *tail; // Newest node on the queue
     size_t length;
 } BasinQueue;
 
+// Create a new queue
 static BasinQueue* queue_new()
 {
     BasinQueue *queue = (BasinQueue*)calloc(1, sizeof(BasinQueue));
@@ -50,8 +53,10 @@ static BasinQueue* queue_new()
     return queue;
 }
 
+// Append a node to the end of the queue
 static inline void queue_push(BasinQueue *queue, BasinCoord coord, int64_t minute)
 {
+    // Create the node
     BasinNode *node = (BasinNode*)malloc(sizeof(BasinNode));
     if (!node)
     {
@@ -59,44 +64,57 @@ static inline void queue_push(BasinQueue *queue, BasinCoord coord, int64_t minut
         abort();
     }
 
+    // Initialize the node
     *node = (BasinNode){
         .coord = coord,
         .minute = minute,
         .next = NULL
     };
 
+    // Add the node to the end of the queue
     if (queue->tail)
     {
+        // Link the previous node to the current, then set the tail to the current
         queue->tail->next = node;
         queue->tail = node;
     }
     else
     {
+        // If this is the first node, set the head and tail to it
         assert(queue->head == NULL);
         queue->head = node;
         queue->tail = node;
     }
 
+    // Increment the node counter
     queue->length++;
 }
 
+// Remove a node from the beginning of the queue
+// The function writes the node's coordinates and minute to the arguments 'out_coord' and 'out_minute'.
+// It returns 'true' if a node was popped, or 'false' if the queue was empty.
 static inline bool queue_pop(BasinQueue *queue, BasinCoord *out_coord, int64_t *out_minute)
 {
+    // If there are no nodes
     if (!queue->head) return false;
 
+    // Write the coordinates and minute
     *out_coord = queue->head->coord;
     *out_minute = queue->head->minute;
 
+    // Move the queue's head to the next node, then free the popped node
     BasinNode *old_node = queue->head;
     queue->head = queue->head->next;
     free(old_node);
     if (!queue->head) queue->tail = NULL;
 
+    // Decrement the node counter
     queue->length--;
     
     return true;
 }
 
+// Free the memory used by a queue
 static inline void queue_destroy(BasinQueue *queue)
 {
     BasinNode *node = queue->head;
@@ -109,8 +127,10 @@ static inline void queue_destroy(BasinQueue *queue)
     free(queue);
 }
 
+// Find the least common multiple between two values
 static size_t least_common_multiple(size_t value1, size_t value2)
 {
+    // Sort the values
     size_t small, big;
     if (value1 < value2)
     {
@@ -123,35 +143,52 @@ static size_t least_common_multiple(size_t value1, size_t value2)
         big = value1;
     }
 
+    // Accumulator to store the least common multiple
     size_t lcm = 1;
     
+    // Loop through the values from 2 up to the smallest value
     for (size_t i = 2; i <= small; i++)
     {
+        // Check if both values are divisible by the tested value
         if (big % i == 0 && small % i == 0)
         {
+            // If so, divide both values by it, and multiply the accumulator by it
             big /= i;
             small /= i;
             lcm *= i;
         }
+        /* Note:
+            The loop can exit earlier if at any point the tested value is
+            bigger than the small value (there's no need for testing beyond that).
+        */
     }
     
+    // Multiply the accumulator by both values in order to get the least common multiple
     return lcm * small * big;
 }
 
+// Calculate the coordinates of a blizzard at a given minute
 static inline BasinCoord blizzard_position(Blizzard blizzard, int64_t minute, int64_t width, int64_t height)
 {
+    // The map is considered to have walls on all four corners
+    // (the walls are removed before calculating the modulo)
     int64_t x = (blizzard.offset.x-1 + minute*blizzard.direction.x) % (width -2);
     int64_t y = (blizzard.offset.y-1 + minute*blizzard.direction.y) % (height-2);
 
+    // If the resulting coordinate is negative, wrap around to the other side
     if (x < 0) x += width -2;
     if (y < 0) y += height-2;
 
+    // Add back the walls
     x += 1;
     y += 1;
 
+    // The blizzard's coordinates
     return (BasinCoord){x, y};
 }
 
+// Perform a Breadth-First Search in order to find the shortest path between two points on the map.
+// The function returns the amount of minutes that the path took.
 static int64_t pathfind_bfs(
     size_t width,                       // Width of the map
     size_t height,                      // Height of the map
@@ -191,18 +228,21 @@ static int64_t pathfind_bfs(
         }
     }
 
-    // Visited positions
-    // Note: For the purpose of flagging a node as "visited",
+    // Seen positions on the map
+    // Note: For the purpose of flagging a node as "seen",
     //       I am considering each map state as a separate map.
-    bool visited[num_states][height][width];
-    memset(visited, 0, sizeof(visited));
+    bool seen[num_states][height][width];
+    memset(seen, 0, sizeof(seen));
     
+    // Starting position and state on the map
     BasinCoord coord = start;
     BasinQueue *queue = queue_new();
     size_t state = 0;
 
-    visited[state][coord.y][coord.x] = true;
+    // Flag the starting position as "seen"
+    seen[state][coord.y][coord.x] = true;
 
+    // Keep searching for paths until we arrive to the destination
     while ( !(coord.x == end.x && coord.y == end.y) )
     {
         // Current coordinates on the map
@@ -229,11 +269,11 @@ static int64_t pathfind_bfs(
             if (
                 new.y >= 0 && new.y < height        // Bound check (do not go outside the map)
                 && map_states[state][new.y][new.x]  // Is the exit unblocked?
-                && !visited[state][new.y][new.x]    // Is the exit not visited yet?
+                && !seen[state][new.y][new.x]       // Was this exit not seen yet?
             )
             {
                 // Flag the current position as "visited"
-                visited[state][new.y][new.x] = true;
+                seen[state][new.y][new.x] = true;
                 
                 // Enqueue the exit node to be visited
                 queue_push(queue, new, minute);
@@ -250,7 +290,13 @@ static int64_t pathfind_bfs(
             return INT64_MAX;
         }
 
-        assert(queue->length <= 10000);
+        // Sanity check to limit the queue size to 100 MB
+        // (to prevent mistakes from crashing the system)
+        assert(queue->length <= 100000000 / sizeof(BasinNode));
+        /* Note:
+            The actual size will be far less than that,
+            if the algorithm is working and the map is not too big.
+        */
     }
 
     queue_destroy(queue);
@@ -263,25 +309,32 @@ int main(int argc, char **argv)
     FILE *input = fopen("input.txt", "rt");
     char line[256];
 
+    // Map's dimensions
     int64_t width  = 0;
     int64_t height = 0;
     
-    size_t empty_count = 0;
-    size_t blizz_count = 0;
+    size_t empty_count = 0; // Amount of free spaces on the map
+    size_t blizz_count = 0; // Amount of blizzards on the map
 
+    // Determine the map's dimensions
     while (fgets(line, sizeof(line), input))
     {
         if (width == 0)
         {
+            // The width is the amount of characters on the line,
+            // not considering the newline character
             width = strlen(line) - 1;
         }
         else
         {
+            // All lines must have the same length
             assert(width == strlen(line) - 1);
         }
 
+        // The height is the amount of newline characters
         height++;
 
+        // Validate the characters on the line
         for (int64_t i = 0; i < width; i++)
         {
             const char next_char = line[i];
@@ -312,30 +365,39 @@ int main(int argc, char **argv)
         }
     }
 
+    // Return to the beginning of the input file
     rewind(input);
 
     // 2-D array of booleans to represent the map
     // (a value of 'true' means that the position is free)
     bool map[height][width];
     memset(map, true, sizeof(map));
+    /* Note:
+        This map only keep track of the walls.
+        The blizzards are going to be checked by a different map inside the pathfind function.
+    */
 
     // Array for storing the initial positions of the blizzards
     Blizzard blizzards[blizz_count];
 
     {
+        // Current coordinate on the map
         BasinCoord my_coord = {-1, 0};
         size_t blizz_id = 0;
         char next_char;
         
         while ( (next_char = fgetc(input)) != EOF )
         {
+            // Each new character moves the x coordinate to the right
             my_coord.x += 1;
 
             const int64_t x = my_coord.x;
             const int64_t y = my_coord.y;
             
+            // Process each character on the line
             switch (next_char)
             {
+                // Set the starting positions and direction of the blizzards
                 case '>':
                     blizzards[blizz_id++] = (Blizzard){my_coord, {+1, 0}};
                     break;
@@ -352,14 +414,17 @@ int main(int argc, char **argv)
                     blizzards[blizz_id++] = (Blizzard){my_coord, {0, -1}};
                     break;
                 
+                // Empty space
                 case '.':
                     break;
                 
+                // Wall
                 case '#':
                     assert(y == 0 || x == 0 || x == width - 1 || y == height -1);
                     map[y][x] = false;
                     break;
                 
+                // New row
                 case '\n':
                     my_coord.y += 1;
                     my_coord.x = -1;
@@ -370,11 +435,16 @@ int main(int argc, char **argv)
 
     fclose(input);
 
+    /******************** Part 1 ********************/
+
+    // Set the starting position and the destination
     BasinCoord start_coord = {1, 0};
     BasinCoord end_coord   = {width - 2, height - 1};
     assert(map[start_coord.y][start_coord.x] && map[end_coord.y][end_coord.x]);
 
-    pathfind_bfs(width, height, map, start_coord, end_coord, blizz_count, blizzards, 0);
+    // Find the shortest path between those two positions
+    int64_t solution_p1 = pathfind_bfs(width, height, map, start_coord, end_coord, blizz_count, blizzards, 0);
+    printf("Part 1: %ld minutes\n", solution_p1);
 
     return 0;
 }
