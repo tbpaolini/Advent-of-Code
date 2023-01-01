@@ -190,52 +190,75 @@ static int64_t pathfind_bfs(
             }
         }
     }
+
+    // Visited positions
+    // Note: For the purpose of flagging a node as "visited",
+    //       I am considering each map state as a separate map.
+    bool visited[num_states][height][width];
+    memset(visited, 0, sizeof(visited));
     
     BasinCoord coord = start;
     BasinQueue *queue = queue_new();
+    size_t state = 0;
 
     while ( !(coord.x == end.x && coord.y == end.y) )
     {
-        minute += 1;
-        size_t state = minute % num_states;
-        
+        // Current coordinates on the map
         const int64_t x = coord.x;
         const int64_t y = coord.y;
+
+        // Flag the current position as "visited"
+        visited[state][y][x] = true;
         
+        // Next map state
+        minute += 1;
+        state = minute % num_states;
+        
+        // Available exits on that state
         BasinCoord exits[5] = {
-            {x, y+1},
-            {x+1, y},
-            {x-1, y},
-            {x, y-1},
-            {x,   y},
+            {x, y+1},   // Bottom
+            {x+1, y},   // Left
+            {x-1, y},   // Right
+            {x, y-1},   // Top
+            {x,   y},   // Wait (do not move)
         };
 
-        bool wait = true;
+        // Check all exits
         for (size_t i = 0; i < 5; i++)
         {
             const BasinCoord new = exits[i];
-            if (new.y >= 0 && new.y < height && map_states[state][new.y][new.x])
+            if (
+                new.y >= 0 && new.y < height        // Bound check (do not go outside the map)
+                && map_states[state][new.y][new.x]  // Is the exit unblocked?
+                && !visited[state][new.y][new.x]    // Is the exit not visited yet?
+            )
             {
+                // Enqueue the exit node to be visited
                 queue_push(queue, new, minute);
             }
         }
         
+        // Dequeue the next node to be visited
+        // (the oldest enqueued nodes are dequeued first)
         bool has_exit = queue_pop(queue, &coord, &minute);
         if (!has_exit)
         {
+            queue_destroy(queue);
             fprintf(stderr, "Error: Path not found\n");
             return INT64_MAX;
         }
 
         assert(queue->length <= 10000);
     }
+
+    queue_destroy(queue);
     
     return minute;
 }
 
 int main(int argc, char **argv)
 {
-    FILE *input = fopen("input.txt", "rt");
+    FILE *input = fopen("test.txt", "rt");
     char line[256];
 
     int64_t width  = 0;
