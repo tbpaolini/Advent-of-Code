@@ -201,14 +201,13 @@ static int64_t pathfind_bfs(
     BasinQueue *queue = queue_new();
     size_t state = 0;
 
+    visited[state][coord.y][coord.x] = true;
+
     while ( !(coord.x == end.x && coord.y == end.y) )
     {
         // Current coordinates on the map
         const int64_t x = coord.x;
         const int64_t y = coord.y;
-
-        // Flag the current position as "visited"
-        visited[state][y][x] = true;
         
         // Next map state
         minute += 1;
@@ -233,6 +232,9 @@ static int64_t pathfind_bfs(
                 && !visited[state][new.y][new.x]    // Is the exit not visited yet?
             )
             {
+                // Flag the current position as "visited"
+                visited[state][new.y][new.x] = true;
+                
                 // Enqueue the exit node to be visited
                 queue_push(queue, new, minute);
             }
@@ -258,7 +260,7 @@ static int64_t pathfind_bfs(
 
 int main(int argc, char **argv)
 {
-    FILE *input = fopen("test.txt", "rt");
+    FILE *input = fopen("input.txt", "rt");
     char line[256];
 
     int64_t width  = 0;
