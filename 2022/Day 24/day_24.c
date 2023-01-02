@@ -33,7 +33,7 @@ typedef struct BasinNode
     struct BasinNode *next; // Next node on the queue
 } BasinNode;
 
-// A queue of nodes (first in, last out)
+// A queue of nodes (first in, first out)
 typedef struct BasinQueue
 {
     struct BasinNode *head; // Oldest node on the queue
