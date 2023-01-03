@@ -89,6 +89,45 @@ static void trie_destroy(PreffixTree *trie)
     free(node);
 }
 
+static double get_monkey_number(MathMonkey *monkey)
+{
+    if (!monkey->operation)
+    {
+        return monkey->number;
+    }
+    else
+    {
+        double other_numbers[2] = {
+            get_monkey_number(monkey->others[0]),
+            get_monkey_number(monkey->others[1])
+        };
+
+        switch (monkey->operation)
+        {
+            case '+':
+                return other_numbers[0] + other_numbers[1];
+                break;
+            
+            case '-':
+                return other_numbers[0] - other_numbers[1];
+                break;
+            
+            case '/':
+                return other_numbers[0] / other_numbers[1];
+                break;
+            
+            case '*':
+                return other_numbers[0] * other_numbers[1];
+                break;
+
+            default:
+                fprintf(stderr, "Error: Invalid operation '%c'\n", monkey->operation);
+                abort();
+                break;
+        }
+    }
+}
+
 int main(int argc, char * argv)
 {
     FILE *input = fopen("input.txt", "rt");
@@ -101,9 +140,6 @@ int main(int argc, char * argv)
 
     MathMonkey monkeys[monkeys_count];
     memset(monkeys, 0, sizeof(monkeys));
-
-    MathMonkey *root = NULL;
-    MathMonkey *humn = NULL;
 
     PreffixTree *monkey_tree = trie_new();
 
