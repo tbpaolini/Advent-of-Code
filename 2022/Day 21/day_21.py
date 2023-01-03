@@ -1,5 +1,5 @@
 from __future__ import annotations
-from operator import mul, add, sub, floordiv
+from operator import mul, add, sub, truediv
 from collections import namedtuple
 
 # Note: This Python solution is intended for testing the logic
@@ -8,7 +8,7 @@ from collections import namedtuple
 Monkey = namedtuple("Monkey", ("name", "number", "operand1", "operator", "operand2"))
 monkeys:dict[str, Monkey] = {}
 
-with open("/home/tiago/Documentos/Advent of Code/2022/Day 21/test.txt", "rt") as file:
+with open("input.txt", "rt") as file:
     for line in file:
         mk_name, mk_value = line.split(":")
         
@@ -32,7 +32,7 @@ with open("/home/tiago/Documentos/Advent of Code/2022/Day 21/test.txt", "rt") as
                     mk_opt = mul
                 
                 case "/":
-                    mk_opt = floordiv
+                    mk_opt = truediv
             
             assert callable(mk_opt)
             monkey = Monkey(mk_name, None, mk_val1, mk_opt, mk_val2)
@@ -54,33 +54,50 @@ def get_monkey_number(monkey_name:str) -> int:
             get_monkey_number(monkey.operand2)
         )
 
-print("Part 1:", get_monkey_number("root"))
+print("Part 1:", round(get_monkey_number("root")))
 
+# Initial value of our number
 previous_number = monkeys["humn"].number
+
+# Now the "root" monkey subtracts the values
+# (if the result is zero, then the values are equal)
 monkeys["root"] = Monkey("root", None, monkeys["root"].operand1, sub, monkeys["root"].operand2)
+
+# Calculate how far from zero the result is
+# (that is our "error function")
 target = get_monkey_number("root")
 previous_error = abs(target)
 
-my_number = 1
+# First guess for our number
+my_number = 0
 monkeys["humn"] = Monkey("humn", my_number, None, None, None)
+
+# How far from zero the result is after the guess
 target = get_monkey_number("root")
 my_error = abs(target)
 
-rate = 10
+# Learning rate of the minimization algorithm (gradient descent)
+rate = 0.1
 
+# Keep searching for the minimum until the error is smaller than 0.1
 while (my_error > 0.1):
     
+    # Calculate the slope of the function between the previous two guesses
     try:
-        gradient = (my_number - previous_number) / (my_error - previous_error)
+        gradient = (my_number - previous_number) // (my_error - previous_error)
     except ZeroDivisionError:
         gradient = 1 if my_error < previous_error else -1
     
+    # Remember the results of the previous guess
     previous_number = my_number
     previous_error = my_error
 
-    my_number -= rate * gradient
+    # Move the guessed value in the direction that the error function decreases
+    my_number -= rate * my_error * gradient
     monkeys["humn"] = Monkey("humn", my_number, None, None, None)
+    
+    # Recalculate the error
     target = get_monkey_number("root")
     my_error = abs(target)
 
-print("Part 2:", my_number)
+print("Part 2:", round(my_number))
