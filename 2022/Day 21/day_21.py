@@ -8,7 +8,7 @@ from collections import namedtuple
 Monkey = namedtuple("Monkey", ("name", "number", "operand1", "operator", "operand2"))
 monkeys:dict[str, Monkey] = {}
 
-with open("/home/tiago/Documentos/Advent of Code/2022/Day 21/input.txt", "rt") as file:
+with open("/home/tiago/Documentos/Advent of Code/2022/Day 21/test.txt", "rt") as file:
     for line in file:
         mk_name, mk_value = line.split(":")
         
@@ -73,12 +73,12 @@ while (my_error > 0.1):
     try:
         gradient = (my_number - previous_number) / (my_error - previous_error)
     except ZeroDivisionError:
-        gradient = 1
+        gradient = 1 if my_error < previous_error else -1
     
     previous_number = my_number
     previous_error = my_error
 
-    my_number += rate * gradient
+    my_number -= rate * gradient
     monkeys["humn"] = Monkey("humn", my_number, None, None, None)
     target = get_monkey_number("root")
     my_error = abs(target)
