@@ -17,7 +17,6 @@ typedef struct MathMonkey
 typedef struct PreffixTree {
     struct PreffixTree* branches[26];
     struct MathMonkey* data;
-    bool is_terminator;
 } PreffixTree;
 
 static PreffixTree* trie_new()
@@ -31,7 +30,7 @@ static PreffixTree* trie_new()
     return trie;
 }
 
-static void trie_insert(PreffixTree *trie, char *key)
+static void trie_insert(PreffixTree *trie, char *key, MathMonkey *monkey)
 {
     PreffixTree *node = trie;
     char next_char;
@@ -48,10 +47,10 @@ static void trie_insert(PreffixTree *trie, char *key)
         }
         node = node->branches[id];
         
-        assert(pos < 4);
+        assert(pos <= 4);
     }
     
-    node->is_terminator = true;
+    node->data = monkey;
 }
 
 static MathMonkey* trie_get(PreffixTree *trie, char *key)
@@ -65,13 +64,11 @@ static MathMonkey* trie_get(PreffixTree *trie, char *key)
         assert(islower(next_char));
         
         const size_t id = next_char - 'a';
-        if (!node->branches[id]) break;
+        if (!node->branches[id]) return NULL;
         node = node->branches[id];
     }
 
-    if (node->is_terminator) return node->data;
-
-    return NULL;
+    return node->data;
 }
 
 static void trie_destroy(PreffixTree *trie)
@@ -105,6 +102,8 @@ int main(int argc, char * argv)
     MathMonkey *root = NULL;
     MathMonkey *humn = NULL;
 
+    PreffixTree *monkey_tree = trie_new();
+
     for (size_t i = 0; i < monkeys_count; i++)
     {
         fgets(line, sizeof(line), input);
@@ -114,6 +113,7 @@ int main(int argc, char * argv)
         
         assert(strlen(token) == 4);
         strcpy(monkeys[i].name, token);
+        trie_insert(monkey_tree, token, &monkeys[i]);
 
         token = strtok(NULL, delimiters);
         if (isdigit(token[0]))
