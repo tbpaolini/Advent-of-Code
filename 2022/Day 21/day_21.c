@@ -15,7 +15,7 @@ typedef struct MathMonkey
 } MathMonkey;
 
 typedef struct PreffixTree {
-    char branches[26];
+    struct PreffixTree* branches[26];
     struct MathMonkey* data;
     bool is_terminator;
 } PreffixTree;
@@ -67,8 +67,6 @@ static MathMonkey* trie_get(PreffixTree *trie, char *key)
         const size_t id = next_char - 'a';
         if (!node->branches[id]) break;
         node = node->branches[id];
-        
-        assert(pos < 4);
     }
 
     if (node->is_terminator) return node->data;
@@ -99,6 +97,7 @@ int main(int argc, char * argv)
     size_t monkeys_count = 0;
 
     while (fgets(line, sizeof(line), input)) monkeys_count++;
+    rewind(input);
 
     MathMonkey monkeys[monkeys_count];
     memset(monkeys, 0, sizeof(monkeys));
@@ -106,9 +105,32 @@ int main(int argc, char * argv)
     MathMonkey *root = NULL;
     MathMonkey *humn = NULL;
 
-    while (fgets(line, sizeof(line), input))
+    for (size_t i = 0; i < monkeys_count; i++)
     {
-        /* code */
+        fgets(line, sizeof(line), input);
+        
+        const char delimiters[] = ": ";
+        char *token = strtok(line, delimiters);
+        
+        assert(strlen(token) == 4);
+        strcpy(monkeys[i].name, token);
+
+        token = strtok(NULL, delimiters);
+        if (isdigit(token[0]))
+        {
+            monkeys[i].number = atof(token);
+        }
+        else
+        {
+            assert(strlen(token) == 4);
+            
+            token = strtok(NULL, delimiters);
+            assert(strlen(token) == 1);
+            monkeys[i].operation = token[0];
+
+            token = strtok(NULL, delimiters);
+            assert(strlen(token) == 5 && token[4] == '\n');
+        }
     }
 
     fclose(input);
