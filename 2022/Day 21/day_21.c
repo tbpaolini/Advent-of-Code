@@ -9,6 +9,7 @@
 typedef struct MathMonkey
 {
     struct MathMonkey* others[2];
+    char others_name[2][5];
     double number;
     char name[5];
     char operation;
@@ -32,6 +33,8 @@ static PreffixTree* trie_new()
 
 static void trie_insert(PreffixTree *trie, char *key, MathMonkey *monkey)
 {
+    if (!key) return;
+    
     PreffixTree *node = trie;
     char next_char;
     size_t pos = 0;
@@ -123,6 +126,7 @@ int main(int argc, char * argv)
         else
         {
             assert(strlen(token) == 4);
+            strcpy(monkeys[i].others_name[0], token);
             
             token = strtok(NULL, delimiters);
             assert(strlen(token) == 1);
@@ -130,10 +134,24 @@ int main(int argc, char * argv)
 
             token = strtok(NULL, delimiters);
             assert(strlen(token) == 5 && token[4] == '\n');
+            token[4] = '\0';
+            strcpy(monkeys[i].others_name[1], token);
         }
     }
 
     fclose(input);
+
+    for (size_t i = 0; i < monkeys_count; i++)
+    {
+        MathMonkey *monkey = &monkeys[i];
+        
+        for (size_t j = 0; j < 2; j++)
+        {
+            monkey->others[j] = trie_get(monkey_tree, monkey->others_name[j]);
+        }
+    }
+
+    trie_destroy(monkey_tree);
     
     return 0;
 }
