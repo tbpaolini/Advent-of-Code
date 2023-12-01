@@ -1,0 +1,5 @@
+# As a matter of courtesy, I am not uploading the input files this time around.
+# Because there are a finite amount of different input files for each puzzle,
+# and those are an way for Advent of Code to ensure its copyright.
+input.txt
+test*.txt
