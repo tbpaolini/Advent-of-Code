@@ -1,1 +1,10 @@
 .vscode/launch.json
+
+# Advent of Code inputs and HTML descriptions
+input.txt
+puzzle.txt
+puzzle-*.html
+2015/Day 7/input2.txt
+**/input.txt
+**/puzzle.txt
+**/puzzle-*.html
