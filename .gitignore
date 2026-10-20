@@ -1,4 +1,5 @@
-.vscode/launch.json
+# Visual Studio Code's settings
+.vscode/
 
 # Advent of Code inputs and HTML descriptions
 input.txt
