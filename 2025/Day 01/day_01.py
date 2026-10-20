@@ -18,11 +18,14 @@ if (len(sys.argv) > 2) or (not Path(INPUT_FILENAME).exists()):
     sys.exit(1)
 
 p1_answer = 0
+p2_answer = 0
+dial_size = 100
 value = 50
 
 # Process the input
 with open(Path(INPUT_FILENAME), "r", encoding="utf-8") as input_file:
     for line in input_file:
+        started_at_zero = True if value == 0 else False
         if line[0] == "R":
             # Add the number if the line starts with "R"
             value += int(line[1:])
@@ -33,11 +36,20 @@ with open(Path(INPUT_FILENAME), "r", encoding="utf-8") as input_file:
             print(f"ERROR: Invalid line in the input ({line.strip()}).", file=sys.stderr)
             sys.exit(2)
 
+        # Check how many times dial has crossed zero.
+        if value >= 100:
+            p2_answer += value // dial_size
+        elif value <= 0:
+            p2_answer += (-value + dial_size) // dial_size
+            # Already starting at zero does not count as "crossing zero"
+            if started_at_zero: p2_answer -= 1
+
         # Take the modulo to get where the dial lands (the dial has 100 numbers)
         # Important: Python already wraps the result to 99 when subtracting 1 from 0,
         #            other languages might not have this modulo behavior.
-        value = value % 100
+        value = value % dial_size
         if value == 0:
             p1_answer += 1
 
 print(f"Part 1: {p1_answer}")
+print(f"Part 2: {p2_answer}")
