@@ -9,3 +9,8 @@ puzzle-*.html
 **/input.txt
 **/puzzle.txt
 **/puzzle-*.html
+
+# Temporary files
+**/temp*.txt
+**/test*.txt
+**/*.pyc
