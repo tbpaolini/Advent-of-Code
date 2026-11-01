@@ -39,7 +39,7 @@ def count_digits(n:int) -> int:
     else: # (n == 0)
         return 1
 
-# Macros for the directions in which invalid values are going to be searched
+# Constants for the directions in which invalid values will be searched
 DIR_LEFT = "left"
 DIR_RIGHT = "right"
 
@@ -57,10 +57,10 @@ def find_invalid(n:int, direction:str) -> tuple[int,int]:
 
     direction = direction.strip().lower()
     
-    # Amount of digits
+    # Number of digits
     digits = count_digits(n)
 
-    # If the amount of digits is odd, change 'n' to the next integer with an even amount of digits 
+    # If the number of digits is odd, change 'n' to the next integer with an even number of digits
     if (digits % 2 == 1):
         if direction == DIR_RIGHT:
             n = 10**(digits)
@@ -69,7 +69,7 @@ def find_invalid(n:int, direction:str) -> tuple[int,int]:
             n = (10**(digits - 1)) - 1
             digits -= 1
 
-    # Mask for splitting the integer 'n' into two halves with the same amount of digits
+    # Mask for splitting the integer 'n' into two halves with the same number of digits
     mask = 10**(digits // 2)
 
     # Left and right halves of the integer 'n'
@@ -91,6 +91,9 @@ def find_invalid(n:int, direction:str) -> tuple[int,int]:
 
     return invalid, right
 
+
+### --- Part One --- ###
+
 # Answer for Part 1
 p1_answer:int = 0
 
@@ -105,10 +108,51 @@ for start, end in ranges:
     # Find the last invalid value before the range's end
     last_invalid, half_2 = find_invalid(end, DIR_LEFT)
 
-    # Count the amount of invalid values within the range
+    # Count the number of invalid values within the range
     count = (half_2 - half_1) + 1
 
     # Calculate the sum of all values in the range (using the arithmetic series formula)
     p1_answer += int((first_invalid + last_invalid) * count / 2)
 
 print(f"Part 1: {p1_answer}")
+
+
+### --- Part Two --- ###
+
+# Determine the length (number of decimal digits) of the highest possible value
+max_value_len = 0
+for item in ranges:
+    digits = count_digits(item.end)
+    if digits > max_value_len: max_value_len = digits
+
+# Maximum length of a repeating sequence
+max_repeat_len = max_value_len // 2
+
+# Set to store all possible invalid values up to the maximum possible one
+invalid_values:set[int] = set()
+
+# Loop through all possible lengths of repeating sequences
+for dig in range(1, max_repeat_len+1):
+    repeat_count = max_value_len // dig
+    if repeat_count < 2: continue
+    lower_range = 10**(dig-1)
+    upper_range = 10**dig
+
+    # Loop through all possible values for the repeating sequence
+    for rep in range(2, repeat_count+1):
+        # Loop through all possible numbers of times that the sequence can repeat
+        for seq in range(lower_range, upper_range):
+            # Construct the invalid value and add it to the set
+            val = 0
+            for i in range(rep):
+                val += seq * 10**(i*dig)
+            invalid_values.add(val)
+
+# Loop through all input values, checking which ones are in the set of invalid values
+p2_answer = 0
+for item in ranges:
+    for value in range(item.start, item.end + 1):
+        if value in invalid_values:
+            p2_answer += value
+
+print(f"Part 2: {p2_answer}")
