@@ -54,3 +54,21 @@ for y, row in enumerate(grid):
 
 print(f"Part 1: {p1_answer}")
 
+### --- Part Two --- ###
+
+p2_answer = 0
+p2_answer_previous = -1
+
+# Loop through the grid until no more items can be removed
+while p2_answer != p2_answer_previous:
+    # Store how many items there were at the start of the cycle
+    # (if the amount remains unchanged at the end of the cycle, the loop ends)
+    p2_answer_previous = p2_answer
+    for y, row in enumerate(grid):
+        for x, cell in enumerate(row):
+            if not cell: continue
+            if count_neighbors(grid, y, x) <= MAX_NEIGHBORS:
+                p2_answer += 1
+                grid[y][x] = False  # Remove the item
+
+print(f"Part 2: {p2_answer}")
