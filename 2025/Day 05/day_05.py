@@ -82,3 +82,14 @@ for val in values:
             break
 
 print(f"Part 1: {p1_answer}")
+
+### --- Part Two --- ###
+
+p2_answer = 0
+
+# Check all non-overlapping ranges
+for start, end in ranges_merged:
+    # Count the amount of values in the range
+    p2_answer += end - start + 1
+
+print(f"Part 2: {p2_answer}")
