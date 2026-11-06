@@ -14,7 +14,7 @@ if len(sys.argv) == 2:
 
 # Check if the input file exists
 if (len(sys.argv) > 2) or (not Path(INPUT_FILENAME).exists()):
-    print("Instructions: Please have a file called \"input.txt\" in the working directory of this script or run the script with the input file's path as its only parameter.", file=sys.stderr)
+    print("Instructions: Place a file named \"input.txt\" in the script's working directory, or run the script with the input file path as its only argument.", file=sys.stderr)
     sys.exit(1)
 
 # Process the input
